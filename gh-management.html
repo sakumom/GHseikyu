@@ -3,15 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>グループホーム請求管理システム</title>
+    <title>グループホーム請求管理システム v2</title>
+    <!-- Tesseract.js: Coreバージョン（Workerなし） -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>
-        // PDF.jsの設定
-        if (typeof pdfjsLib !== 'undefined') {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        }
-    </script>
     <style>
         * {
             margin: 0;
@@ -51,10 +45,12 @@
             display: flex;
             background: #f5f5f5;
             border-bottom: 2px solid #ddd;
+            flex-wrap: wrap;
         }
 
         .tab {
             flex: 1;
+            min-width: 150px;
             padding: 20px;
             text-align: center;
             cursor: pointer;
@@ -87,7 +83,6 @@
             display: block;
         }
 
-        /* 利用者登録 */
         .form-group {
             margin-bottom: 20px;
         }
@@ -100,7 +95,8 @@
         }
 
         .form-group input,
-        .form-group select {
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid #ddd;
@@ -109,8 +105,14 @@
             transition: border-color 0.3s;
         }
 
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
         .form-group input:focus,
-        .form-group select:focus {
+        .form-group select:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -144,6 +146,7 @@
             cursor: pointer;
             transition: all 0.3s;
             margin-right: 10px;
+            margin-bottom: 10px;
         }
 
         .btn-primary {
@@ -174,7 +177,24 @@
             background: #218838;
         }
 
-        /* 利用者一覧 */
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
         .user-list {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -206,7 +226,6 @@
             color: #666;
         }
 
-        /* カレンダー */
         .calendar {
             margin-top: 20px;
         }
@@ -215,6 +234,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-actions {
+            display: flex;
+            gap: 10px;
             margin-bottom: 20px;
         }
 
@@ -299,7 +324,7 @@
             background: white;
             padding: 30px;
             border-radius: 12px;
-            max-width: 500px;
+            max-width: 600px;
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
@@ -346,22 +371,20 @@
             font-weight: 600;
         }
 
-        .user-selector {
-            margin-bottom: 20px;
-        }
-
-        .unit-selector {
-            margin-bottom: 20px;
-        }
-
         .grid-2 {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
 
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+
         @media (max-width: 768px) {
-            .grid-2 {
+            .grid-2, .grid-3 {
                 grid-template-columns: 1fr;
             }
 
@@ -392,31 +415,124 @@
             color: #0c5460;
             border: 1px solid #bee5eb;
         }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .section-header {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #667eea;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .info-card p {
+            margin: 8px 0;
+            color: #495057;
+        }
+
+        .quick-action-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏠 グループホーム請求管理システム</h1>
-            <p>Tokyo. settle - 障害者共同生活援助サービス</p>
+            <h1>🏠 グループホーム請求管理システム v2</h1>
+            <p>障害者共同生活援助サービス</p>
         </div>
 
         <div class="tabs">
-            <button class="tab active" onclick="showTab('users')">👤 利用者管理</button>
+            <button class="tab active" onclick="showTab('facility')">🏢 事業所情報</button>
+            <button class="tab" onclick="showTab('users')">👤 利用者管理</button>
             <button class="tab" onclick="showTab('records')">📅 実績記録</button>
             <button class="tab" onclick="showTab('export')">📤 請求データ出力</button>
         </div>
 
         <div class="content">
+            <!-- 事業所情報タブ -->
+            <div id="facility" class="tab-content active">
+                <h2 class="section-header">事業所・建物基本情報</h2>
+
+                <form id="facilityForm">
+                    <h3 style="color: #667eea; margin: 20px 0;">事業所情報</h3>
+                    
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>事業所番号 *</label>
+                            <input type="text" id="facilityNumber" value="1321402032" required>
+                        </div>
+                        <div class="form-group">
+                            <label>事業所名 *</label>
+                            <input type="text" id="facilityName" value="Tokyo. settle" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>法人名</label>
+                            <input type="text" id="corporationName" value="合同会社エヴェレカンパニー">
+                        </div>
+                        <div class="form-group">
+                            <label>地域区分</label>
+                            <select id="areaCode">
+                                <option value="01">一級地</option>
+                                <option value="02">二級地</option>
+                                <option value="03">三級地</option>
+                                <option value="04">四級地</option>
+                                <option value="05">五級地</option>
+                                <option value="06">六級地</option>
+                                <option value="07">七級地</option>
+                                <option value="20">その他</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <h3 style="color: #667eea; margin: 30px 0 20px 0;">建物（ユニット）情報</h3>
+                    
+                    <div id="buildingList"></div>
+                    
+                    <button type="button" class="btn btn-info" onclick="addBuilding()">+ 建物を追加</button>
+
+                    <div style="margin-top: 30px;">
+                        <button type="submit" class="btn btn-primary">💾 保存</button>
+                    </div>
+                </form>
+
+                <div id="facilityInfo" style="margin-top: 40px;"></div>
+            </div>
+
             <!-- 利用者管理タブ -->
-            <div id="users" class="tab-content active">
-                <h2>利用者登録</h2>
+            <div id="users" class="tab-content">
+                <h2 class="section-header">利用者登録</h2>
                 
                 <div class="upload-area" id="uploadArea">
-                    <input type="file" id="certificateImage" accept="image/*,application/pdf" style="display: none;" onchange="handleFileUpload(event)">
+                    <input type="file" id="certificateFile" accept="image/*,application/pdf" style="display: none;" onchange="handleFileUpload(event)">
                     <p style="font-size: 1.2em; margin-bottom: 10px;">📷 受給者証をアップロード</p>
                     <p style="color: #666;">クリックまたはドラッグ&ドロップでPDFまたは画像を選択</p>
-                    <p style="color: #999; font-size: 0.9em; margin-top: 10px;">📄 PDF・PNG・JPEGに対応 / OCRで自動読み取りします</p>
+                    <p style="color: #999; font-size: 0.9em; margin-top: 10px;">📄 PDF・PNG・JPEGに対応</p>
                 </div>
 
                 <div id="ocrProgress" class="progress" style="display: none;"></div>
@@ -467,9 +583,6 @@
                         <label>所属ユニット *</label>
                         <select id="userUnit" required>
                             <option value="">選択してください</option>
-                            <option value="nakano">Nakano. settle</option>
-                            <option value="nerima">Nerima. settle</option>
-                            <option value="nerima-west">Nerima. settle west</option>
                         </select>
                     </div>
 
@@ -485,16 +598,16 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary">💾 登録</button>
-                    <button type="button" class="btn btn-secondary" onclick="resetForm()">🔄 クリア</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetUserForm()">🔄 クリア</button>
                 </form>
 
-                <h2 style="margin-top: 40px;">登録済み利用者</h2>
+                <h2 class="section-header">登録済み利用者</h2>
                 <div id="userList" class="user-list"></div>
             </div>
 
             <!-- 実績記録タブ -->
             <div id="records" class="tab-content">
-                <div class="user-selector">
+                <div class="form-group">
                     <label style="font-weight: 600; margin-bottom: 10px; display: block;">利用者を選択</label>
                     <select id="recordUser" onchange="loadRecords()" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px;">
                         <option value="">利用者を選択してください</option>
@@ -507,12 +620,19 @@
                     <button class="btn btn-secondary" onclick="changeMonth(1)">次月 →</button>
                 </div>
 
+                <div class="calendar-actions">
+                    <button class="btn btn-success" onclick="fillMonth('○')">✅ 全て本入居（○）で埋める</button>
+                    <button class="btn btn-warning" onclick="fillMonth('外泊')">🏖️ 全て外泊で埋める</button>
+                    <button class="btn btn-info" onclick="fillMonth('入院')">🏥 全て入院で埋める</button>
+                    <button class="btn btn-secondary" onclick="clearMonth()">🗑️ 今月をクリア</button>
+                </div>
+
                 <div id="calendar" class="calendar"></div>
             </div>
 
             <!-- 請求データ出力タブ -->
             <div id="export" class="tab-content">
-                <h2>請求データ出力</h2>
+                <h2 class="section-header">請求データ出力</h2>
                 
                 <div class="alert alert-info">
                     <strong>📋 出力内容</strong><br>
@@ -566,6 +686,8 @@
         // データストレージ
         let users = JSON.parse(localStorage.getItem('gh_users') || '[]');
         let records = JSON.parse(localStorage.getItem('gh_records') || '{}');
+        let facility = JSON.parse(localStorage.getItem('gh_facility') || '{}');
+        let buildings = JSON.parse(localStorage.getItem('gh_buildings') || '[]');
         
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth();
@@ -574,9 +696,13 @@
 
         // 初期化
         document.addEventListener('DOMContentLoaded', () => {
+            loadFacilityInfo();
+            renderBuildingList();
             renderUserList();
             updateUserSelector();
             updateCalendar();
+            updateUnitOptions();
+            displayFacilityInfo();
             
             const today = new Date();
             document.getElementById('exportMonth').value = 
@@ -592,14 +718,165 @@
             document.getElementById(tabName).classList.add('active');
         }
 
-        // 画像アップロード処理
-        document.getElementById('uploadArea').addEventListener('click', () => {
-            document.getElementById('certificateImage').click();
+        // ========== 事業所情報管理 ==========
+        
+        function loadFacilityInfo() {
+            if (facility.facilityNumber) {
+                document.getElementById('facilityNumber').value = facility.facilityNumber || '';
+                document.getElementById('facilityName').value = facility.facilityName || '';
+                document.getElementById('corporationName').value = facility.corporationName || '';
+                document.getElementById('areaCode').value = facility.areaCode || '01';
+            }
+        }
+
+        function addBuilding() {
+            const building = {
+                id: Date.now().toString(),
+                name: '',
+                capacity: 0,
+                nightSupport: false,
+                medicalCooperation: false,
+                largeScale: false
+            };
+            buildings.push(building);
+            renderBuildingList();
+        }
+
+        function removeBuilding(id) {
+            if (confirm('この建物を削除しますか？')) {
+                buildings = buildings.filter(b => b.id !== id);
+                localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+                renderBuildingList();
+                updateUnitOptions();
+            }
+        }
+
+        function renderBuildingList() {
+            const container = document.getElementById('buildingList');
+            if (buildings.length === 0) {
+                // デフォルトの建物を追加
+                buildings = [
+                    { id: 'nakano', name: 'Nakano. settle', capacity: 7, nightSupport: true, medicalCooperation: true, largeScale: false },
+                    { id: 'nerima', name: 'Nerima. settle', capacity: 5, nightSupport: true, medicalCooperation: false, largeScale: false },
+                    { id: 'nerima-west', name: 'Nerima. settle west', capacity: 8, nightSupport: false, medicalCooperation: false, largeScale: true }
+                ];
+                localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+            }
+
+            container.innerHTML = buildings.map(building => `
+                <div class="info-card">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>建物名</label>
+                            <input type="text" value="${building.name}" onchange="updateBuilding('${building.id}', 'name', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label>定員</label>
+                            <input type="number" value="${building.capacity}" onchange="updateBuilding('${building.id}', 'capacity', this.value)">
+                        </div>
+                    </div>
+                    <div class="grid-3">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" ${building.nightSupport ? 'checked' : ''} onchange="updateBuilding('${building.id}', 'nightSupport', this.checked)">
+                                夜間支援あり
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" ${building.medicalCooperation ? 'checked' : ''} onchange="updateBuilding('${building.id}', 'medicalCooperation', this.checked)">
+                                医療連携あり
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" ${building.largeScale ? 'checked' : ''} onchange="updateBuilding('${building.id}', 'largeScale', this.checked)">
+                                大規模減算
+                            </label>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="removeBuilding('${building.id}')">🗑️ 削除</button>
+                </div>
+            `).join('');
+
+            updateUnitOptions();
+        }
+
+        function updateBuilding(id, field, value) {
+            const building = buildings.find(b => b.id === id);
+            if (building) {
+                building[field] = field === 'capacity' ? parseInt(value) : value;
+                localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+                updateUnitOptions();
+            }
+        }
+
+        function updateUnitOptions() {
+            const select = document.getElementById('userUnit');
+            select.innerHTML = '<option value="">選択してください</option>' +
+                buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+        }
+
+        document.getElementById('facilityForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            facility = {
+                facilityNumber: document.getElementById('facilityNumber').value,
+                facilityName: document.getElementById('facilityName').value,
+                corporationName: document.getElementById('corporationName').value,
+                areaCode: document.getElementById('areaCode').value
+            };
+
+            localStorage.setItem('gh_facility', JSON.stringify(facility));
+            localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+            
+            displayFacilityInfo();
+            alert('✅ 事業所情報を保存しました！');
         });
 
-        // ドラッグ&ドロップ
+        function displayFacilityInfo() {
+            const container = document.getElementById('facilityInfo');
+            if (!facility.facilityNumber) return;
+
+            container.innerHTML = `
+                <h2 class="section-header">登録情報</h2>
+                <div class="info-card">
+                    <h3>事業所情報</h3>
+                    <p><strong>事業所番号:</strong> ${facility.facilityNumber}</p>
+                    <p><strong>事業所名:</strong> ${facility.facilityName}</p>
+                    <p><strong>法人名:</strong> ${facility.corporationName}</p>
+                    <p><strong>地域区分:</strong> ${getAreaName(facility.areaCode)}</p>
+                </div>
+                <div class="info-card">
+                    <h3>建物情報</h3>
+                    ${buildings.map(b => `
+                        <p><strong>${b.name}</strong> - 定員${b.capacity}人
+                        ${b.nightSupport ? '🌙夜間支援' : ''}
+                        ${b.medicalCooperation ? '🏥医療連携' : ''}
+                        ${b.largeScale ? '⚠️大規模減算' : ''}
+                        </p>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function getAreaName(code) {
+            const areas = {
+                '01': '一級地', '02': '二級地', '03': '三級地',
+                '04': '四級地', '05': '五級地', '06': '六級地',
+                '07': '七級地', '20': 'その他'
+            };
+            return areas[code] || code;
+        }
+
+        // ========== OCR機能 ==========
+
         const uploadArea = document.getElementById('uploadArea');
         
+        uploadArea.addEventListener('click', () => {
+            document.getElementById('certificateFile').click();
+        });
+
         uploadArea.addEventListener('dragover', (e) => {
             e.preventDefault();
             uploadArea.classList.add('dragover');
@@ -629,127 +906,52 @@
         }
 
         async function processFile(file) {
-            if (file.type === 'application/pdf') {
-                await processPDF(file);
-            } else if (file.type.startsWith('image/')) {
-                processImage(file);
-            }
-        }
-
-        async function processPDF(file) {
             const progress = document.getElementById('ocrProgress');
             progress.style.display = 'block';
-            progress.textContent = '📄 PDFを読み込み中...';
+            progress.textContent = '🔍 ファイルを読み込み中...';
 
             try {
-                // PDF.jsが利用可能かチェック
-                if (typeof pdfjsLib === 'undefined') {
-                    throw new Error('PDF.jsライブラリが読み込まれていません');
+                if (file.type === 'application/pdf') {
+                    await processPDFSimple(file);
+                } else {
+                    await processImage(file);
                 }
-
-                const arrayBuffer = await file.arrayBuffer();
-                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-                const pdf = await loadingTask.promise;
-                
-                progress.textContent = `📄 PDFページ数: ${pdf.numPages} - 処理開始`;
-
-                // 最初の2ページを処理（受給者証は通常1-2ページ）
-                const pagesToProcess = Math.min(2, pdf.numPages);
-                let allText = '';
-
-                for (let pageNum = 1; pageNum <= pagesToProcess; pageNum++) {
-                    progress.textContent = `📄 ${pageNum}/${pagesToProcess}ページ目を読み込み中...`;
-                    
-                    const page = await pdf.getPage(pageNum);
-                    const viewport = page.getViewport({ scale: 2.5 });
-                    
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-
-                    const renderContext = {
-                        canvasContext: context,
-                        viewport: viewport
-                    };
-
-                    await page.render(renderContext).promise;
-
-                    progress.textContent = `🔍 ${pageNum}/${pagesToProcess}ページ目をOCR処理中...`;
-
-                    // CanvasをBlob経由で処理（より安定）
-                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-                    
-                    const result = await Tesseract.recognize(
-                        blob,
-                        'jpn',
-                        {
-                            logger: m => {
-                                if (m.status === 'recognizing text') {
-                                    const percent = Math.round(m.progress * 100);
-                                    progress.textContent = `🔍 ${pageNum}/${pagesToProcess}ページ目 OCR処理中... ${percent}%`;
-                                }
-                            }
-                        }
-                    );
-
-                    allText += result.data.text + '\n\n';
-                    console.log(`ページ${pageNum} OCR結果:`, result.data.text);
-                }
-
-                progress.textContent = '✅ PDF読み取り完了！';
-                console.log('全体のOCR結果:', allText);
-                extractCertificateData(allText);
-                
+            } catch (err) {
+                console.error('ファイル処理エラー:', err);
+                progress.textContent = '❌ ファイルの読み込みに失敗しました';
                 setTimeout(() => {
                     progress.style.display = 'none';
                 }, 3000);
-
-            } catch (err) {
-                console.error('PDFエラー詳細:', err);
-                progress.textContent = '❌ PDF読み取りに失敗しました';
-                progress.style.display = 'block';
-                
-                // エラー詳細を表示
-                const errorDetail = document.createElement('div');
-                errorDetail.style.cssText = 'color: red; margin-top: 10px; font-size: 0.9em;';
-                errorDetail.textContent = `エラー: ${err.message}`;
-                
-                const progressDiv = document.getElementById('ocrProgress');
-                if (!progressDiv.querySelector('.error-detail')) {
-                    errorDetail.className = 'error-detail';
-                    progressDiv.appendChild(errorDetail);
-                }
-                
-                // 画像として読み込みを試みる
-                setTimeout(() => {
-                    if (confirm('PDFの読み込みに失敗しました。画像として読み込みを試しますか？')) {
-                        processImage(file);
-                    }
-                }, 1000);
             }
         }
 
-        function processImage(file) {
+        async function processPDFSimple(file) {
             const progress = document.getElementById('ocrProgress');
-            progress.style.display = 'block';
+            progress.textContent = '📄 PDFを画像に変換中...';
+            
+            // PDFを画像として読み込む簡易版
+            alert('📝 PDFのOCRは現在開発中です。画像形式（PNG/JPEG）での読み込みをお試しください。\n\nまたは、PDFを開いてスクリーンショットを撮り、その画像をアップロードしてください。');
+            progress.style.display = 'none';
+        }
+
+        async function processImage(file) {
+            const progress = document.getElementById('ocrProgress');
             progress.textContent = '🔍 画像を解析中...';
 
             const reader = new FileReader();
             reader.onload = async (e) => {
                 try {
-                    // Tesseract.jsが利用可能かチェック
-                    if (typeof Tesseract === 'undefined') {
-                        throw new Error('Tesseract.jsライブラリが読み込まれていません');
-                    }
-
+                    progress.textContent = '🔍 OCR処理中... 0%';
+                    
+                    // Tesseract.jsでOCR実行
                     const result = await Tesseract.recognize(
                         e.target.result,
                         'jpn',
                         {
                             logger: m => {
                                 if (m.status === 'recognizing text') {
-                                    progress.textContent = `🔍 テキスト認識中... ${Math.round(m.progress * 100)}%`;
+                                    const percent = Math.round(m.progress * 100);
+                                    progress.textContent = `🔍 OCR処理中... ${percent}%`;
                                 }
                             }
                         }
@@ -764,45 +966,31 @@
                     }, 3000);
 
                 } catch (err) {
-                    console.error('画像OCRエラー:', err);
-                    progress.textContent = '❌ 読み取りに失敗しました';
-                    
-                    const errorDetail = document.createElement('div');
-                    errorDetail.style.cssText = 'color: red; margin-top: 10px; font-size: 0.9em;';
-                    errorDetail.textContent = `エラー: ${err.message}`;
-                    
-                    const progressDiv = document.getElementById('ocrProgress');
-                    const existingError = progressDiv.querySelector('.error-detail');
-                    if (existingError) {
-                        existingError.remove();
-                    }
-                    errorDetail.className = 'error-detail';
-                    progressDiv.appendChild(errorDetail);
+                    console.error('OCRエラー:', err);
+                    progress.textContent = '❌ OCRに失敗しました';
+                    alert('OCRエラーが発生しました。手動で入力してください。\n\nエラー: ' + err.message);
+                    setTimeout(() => {
+                        progress.style.display = 'none';
+                    }, 3000);
                 }
-            };
-
-            reader.onerror = (err) => {
-                console.error('ファイル読み込みエラー:', err);
-                progress.textContent = '❌ ファイルの読み込みに失敗しました';
             };
 
             reader.readAsDataURL(file);
         }
 
         function extractCertificateData(text) {
-            console.log('OCR結果:', text);
+            console.log('抽出元テキスト:', text);
             
-            // 受給者証番号（10桁の数字）
+            // 受給者証番号（10桁）
             const certMatch = text.match(/\d{10}/);
             if (certMatch) {
                 document.getElementById('certificateNumber').value = certMatch[0];
             }
 
-            // 氏名の抽出
+            // 氏名
             const namePatterns = [
                 /氏[\s　]*名[：:\s　]*([^\n\r　]{2,10})/,
                 /受給者氏名[：:\s　]*([^\n\r　]{2,10})/,
-                /フリガナ[\s\S]{0,20}[\r\n]+([^\n\r　]{2,10})/
             ];
             
             for (const pattern of namePatterns) {
@@ -817,72 +1005,24 @@
             }
 
             // 市町村番号（6桁）
-            const cityPatterns = [
-                /市町村番号[：:\s　]*(\d{6})/,
-                /支給市町村番号[：:\s　]*(\d{6})/,
-                /(\d{6})/  // フォールバック
-            ];
-            
-            for (const pattern of cityPatterns) {
-                const match = text.match(pattern);
-                if (match && match[1] !== certMatch?.[0]) {  // 受給者証番号と重複しないように
-                    document.getElementById('cityCode').value = match[1];
-                    break;
-                }
+            const cityMatch = text.match(/\d{6}/);
+            if (cityMatch && cityMatch[0] !== certMatch?.[0]) {
+                document.getElementById('cityCode').value = cityMatch[0];
             }
 
             // 障害支援区分
-            const supportLevelMatch = text.match(/区分[　\s]*([１-６1-6])/);
-            if (supportLevelMatch) {
-                const levelNum = supportLevelMatch[1].replace(/[１-６]/g, (s) => 
+            const supportMatch = text.match(/区分[　\s]*([１-６1-6])/);
+            if (supportMatch) {
+                const num = supportMatch[1].replace(/[１-６]/g, (s) => 
                     String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
-                const levelCode = (20 + parseInt(levelNum)).toString();
-                document.getElementById('supportLevel').value = levelCode;
-            }
-
-            // 交付年月日
-            const issueDatePatterns = [
-                /交付年月日[：:\s　]*[令和平成]*(\d{1,2})[年\s　]*(\d{1,2})[月\s　]*(\d{1,2})/,
-                /(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/
-            ];
-            
-            for (const pattern of issueDatePatterns) {
-                const match = text.match(pattern);
-                if (match) {
-                    let year = match[1];
-                    const month = match[2].padStart(2, '0');
-                    const day = match[3].padStart(2, '0');
-                    
-                    // 和暦を西暦に変換（令和）
-                    if (year.length <= 2) {
-                        year = (2018 + parseInt(year)).toString();
-                    }
-                    
-                    document.getElementById('issueDate').value = `${year}-${month}-${day}`;
-                    break;
-                }
-            }
-
-            // 認定有効期間
-            const validPeriodPattern = /(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})[^\d]+(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/;
-            const validMatch = text.match(validPeriodPattern);
-            if (validMatch) {
-                const fromDate = `${validMatch[1]}-${validMatch[2].padStart(2, '0')}-${validMatch[3].padStart(2, '0')}`;
-                const toDate = `${validMatch[4]}-${validMatch[5].padStart(2, '0')}-${validMatch[6].padStart(2, '0')}`;
-                document.getElementById('validFrom').value = fromDate;
-                document.getElementById('validTo').value = toDate;
-            }
-
-            // 利用者負担上限額
-            const burdenMatch = text.match(/利用者負担[\s\S]{0,20}?(\d+)[円]/);
-            if (burdenMatch) {
-                document.getElementById('userBurdenLimit').value = burdenMatch[1];
+                document.getElementById('supportLevel').value = (20 + parseInt(num)).toString();
             }
 
             alert('📝 読み取り結果を反映しました。内容を確認して必要に応じて修正してください。');
         }
 
-        // フォーム送信
+        // ========== 利用者管理 ==========
+
         document.getElementById('userForm').addEventListener('submit', (e) => {
             e.preventDefault();
             
@@ -904,12 +1044,12 @@
             
             renderUserList();
             updateUserSelector();
-            resetForm();
+            resetUserForm();
             
             alert('✅ 利用者を登録しました！');
         });
 
-        function resetForm() {
+        function resetUserForm() {
             document.getElementById('userForm').reset();
         }
 
@@ -921,7 +1061,7 @@
             }
 
             list.innerHTML = users.map(user => `
-                <div class="user-card" onclick="editUser('${user.id}')">
+                <div class="user-card">
                     <h3>${user.name}</h3>
                     <p>📋 受給者証番号: ${user.certificateNumber}</p>
                     <p>🏠 ユニット: ${getUnitName(user.unit)}</p>
@@ -931,13 +1071,9 @@
             `).join('');
         }
 
-        function getUnitName(unit) {
-            const units = {
-                'nakano': 'Nakano. settle',
-                'nerima': 'Nerima. settle',
-                'nerima-west': 'Nerima. settle west'
-            };
-            return units[unit] || unit;
+        function getUnitName(unitId) {
+            const building = buildings.find(b => b.id === unitId);
+            return building ? building.name : unitId;
         }
 
         function getSupportLevelName(level) {
@@ -948,18 +1084,14 @@
             return levels[level] || 'なし';
         }
 
-        function editUser(userId) {
-            // 編集機能は後で実装
-            alert('編集機能は開発中です');
-        }
-
         function updateUserSelector() {
             const select = document.getElementById('recordUser');
             select.innerHTML = '<option value="">利用者を選択してください</option>' +
                 users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
         }
 
-        // カレンダー関連
+        // ========== カレンダー・実績記録 ==========
+
         function updateCalendar() {
             const calendar = document.getElementById('calendar');
             const monthLabel = document.getElementById('currentMonth');
@@ -972,17 +1104,14 @@
 
             let html = '<div class="calendar-grid">';
             
-            // 曜日ヘッダー
             ['日', '月', '火', '水', '木', '金', '土'].forEach(day => {
                 html += `<div class="calendar-day header">${day}</div>`;
             });
 
-            // 空白セル
             for (let i = 0; i < firstDay; i++) {
                 html += '<div class="calendar-day disabled"></div>';
             }
 
-            // 日付セル
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const record = getRecord(selectedUserId, dateStr);
@@ -1019,6 +1148,56 @@
             updateCalendar();
         }
 
+        function fillMonth(status) {
+            if (!selectedUserId) {
+                alert('利用者を選択してください');
+                return;
+            }
+
+            if (!confirm(`${currentYear}年${currentMonth + 1}月の全ての日を「${status}」で埋めますか？`)) {
+                return;
+            }
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            
+            if (!records[selectedUserId]) {
+                records[selectedUserId] = {};
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                records[selectedUserId][dateStr] = { status, date: dateStr };
+            }
+
+            localStorage.setItem('gh_records', JSON.stringify(records));
+            updateCalendar();
+            alert(`✅ ${currentYear}年${currentMonth + 1}月を「${status}」で埋めました`);
+        }
+
+        function clearMonth() {
+            if (!selectedUserId) {
+                alert('利用者を選択してください');
+                return;
+            }
+
+            if (!confirm(`${currentYear}年${currentMonth + 1}月の記録を全て削除しますか？`)) {
+                return;
+            }
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            
+            if (records[selectedUserId]) {
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    delete records[selectedUserId][dateStr];
+                }
+            }
+
+            localStorage.setItem('gh_records', JSON.stringify(records));
+            updateCalendar();
+            alert(`✅ ${currentYear}年${currentMonth + 1}月の記録を削除しました`);
+        }
+
         function getStatusClass(status) {
             if (status === '○' || status === '○（本入居）') return 'status-ok';
             if (status.includes('外泊')) return 'status-away';
@@ -1031,7 +1210,6 @@
             return records[userId][date];
         }
 
-        // モーダル
         function openDateModal(dateStr) {
             if (!selectedUserId) {
                 alert('利用者を選択してください');
@@ -1041,7 +1219,6 @@
             selectedDate = dateStr;
             document.getElementById('modalDate').textContent = dateStr;
             
-            // 既存の記録があれば選択状態にする
             const record = getRecord(selectedUserId, dateStr);
             document.querySelectorAll('.status-option').forEach(opt => {
                 opt.classList.remove('selected');
@@ -1057,7 +1234,6 @@
             document.getElementById('dateModal').classList.remove('active');
         }
 
-        // ステータス選択
         document.querySelectorAll('.status-option').forEach(option => {
             option.addEventListener('click', function() {
                 document.querySelectorAll('.status-option').forEach(opt => {
@@ -1088,7 +1264,8 @@
             closeModal();
         }
 
-        // CSV出力
+        // ========== CSV出力 ==========
+
         function exportCSV(type) {
             const month = document.getElementById('exportMonth').value;
             if (!month) {
@@ -1106,49 +1283,44 @@
         }
 
         function generateSE(year, month) {
-            // 簡易版のSE生成（実際にはもっと複雑）
-            let csv = '"1","1","0","11","J11","0","1321402032","0","1","' + year + month + '","0"\n';
+            let csv = '"1","1","0","11","J11","0","' + facility.facilityNumber + '","0","1","' + year + month + '","0"\n';
             
-            users.forEach((user, index) => {
+            let lineNum = 2;
+            users.forEach(user => {
                 const recordCount = countRecordsForMonth(user.id, year, month);
                 if (recordCount > 0) {
-                    // 基本情報レコード
-                    csv += `"2","${index + 2}","J111","01","${year}${month}","${user.cityCode}","1321402032","135001","1","10776","125001","125001","0","0","0","1","10000","10000","2","10776","135001","135001","0","0","0"\n`;
+                    csv += `"2","${lineNum}","J111","01","${year}${month}","${user.cityCode}","${facility.facilityNumber}","135001","1","10776","125001","125001","0","0","0","1","10000","10000","2","10776","135001","135001","0","0","0"\n`;
+                    lineNum++;
                 }
             });
 
-            csv += '"3","' + (users.length + 2) + '"\n';
-
+            csv += `"3","${lineNum}"\n`;
             downloadCSV(csv, `SE${year}${month}.csv`);
         }
 
         function generateSV(year, month) {
-            // 簡易版のSV生成
-            let csv = '"1","1","0","32","J61","0","1321402032","0","1","' + year + month + '","0"\n';
+            let csv = '"1","1","0","32","J61","0","' + facility.facilityNumber + '","0","1","' + year + month + '","0"\n';
             
             let lineNum = 2;
             users.forEach(user => {
                 const monthRecords = getMonthRecords(user.id, year, month);
                 if (Object.keys(monthRecords).length > 0) {
-                    // 基本情報
-                    csv += `"2","${lineNum}","J611","01","${year}${month}","${user.cityCode}","1321402032","${user.certificateNumber}","1801","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","30","0","0"\n`;
+                    csv += `"2","${lineNum}","J611","01","${year}${month}","${user.cityCode}","${facility.facilityNumber}","${user.certificateNumber}","1801"\n`;
                     lineNum++;
 
-                    // 日別記録
                     const daysInMonth = new Date(year, month, 0).getDate();
                     for (let day = 1; day <= daysInMonth; day++) {
                         const dateStr = `${year}-${month.padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const record = monthRecords[dateStr];
-                        const status = record ? (record.status === '○' || record.status === '○（本入居）' ? '3' : '') : '';
+                        const status = record ? (record.status === '○' ? '3' : '') : '';
                         
-                        csv += `"2","${lineNum}","J611","02","${year}${month}","${user.cityCode}","1321402032","${user.certificateNumber}","1801","","${day}","","","","","","","","","","","","","","","","","","","","","","","","","","","${status}"\n`;
+                        csv += `"2","${lineNum}","J611","02","${year}${month}","${user.cityCode}","${facility.facilityNumber}","${user.certificateNumber}","1801","","${day}","","","","","","","","","","","","","","","","","","","","","","","","","","","${status}"\n`;
                         lineNum++;
                     }
                 }
             });
 
             csv += `"3","${lineNum}"\n`;
-
             downloadCSV(csv, `SV${year}${month}.csv`);
         }
 
