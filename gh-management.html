@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>グループホーム請求管理システム</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // PDF.jsの設定
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            font-size: 16px;
+        }
+
+        .tab:hover {
+            background: #e0e0e0;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 利用者登録 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e6e6ff;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        /* 利用者一覧 */
+        .user-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .user-card {
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .user-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-color: #667eea;
+        }
+
+        .user-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .user-card p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        /* カレンダー */
+        .calendar {
+            margin-top: 20px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            background: #ddd;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .calendar-day {
+            background: white;
+            padding: 15px;
+            min-height: 100px;
+            position: relative;
+        }
+
+        .calendar-day.header {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            padding: 10px;
+            min-height: auto;
+        }
+
+        .calendar-day.disabled {
+            background: #f5f5f5;
+            color: #ccc;
+        }
+
+        .day-number {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .day-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 5px;
+        }
+
+        .status-ok {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-away {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-hospital {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .status-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .status-option {
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .status-option:hover {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .status-option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .progress {
+            margin: 20px 0;
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .user-selector {
+            margin-bottom: 20px;
+        }
+
+        .unit-selector {
+            margin-bottom: 20px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .calendar-day {
+                min-height: 80px;
+                padding: 10px;
+            }
+
+            .status-options {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 グループホーム請求管理システム</h1>
+            <p>Tokyo. settle - 障害者共同生活援助サービス</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('users')">👤 利用者管理</button>
+            <button class="tab" onclick="showTab('records')">📅 実績記録</button>
+            <button class="tab" onclick="showTab('export')">📤 請求データ出力</button>
+        </div>
+
+        <div class="content">
+            <!-- 利用者管理タブ -->
+            <div id="users" class="tab-content active">
+                <h2>利用者登録</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="certificateImage" accept="image/*,application/pdf" style="display: none;" onchange="handleFileUpload(event)">
+                    <p style="font-size: 1.2em; margin-bottom: 10px;">📷 受給者証をアップロード</p>
+                    <p style="color: #666;">クリックまたはドラッグ&ドロップでPDFまたは画像を選択</p>
+                    <p style="color: #999; font-size: 0.9em; margin-top: 10px;">📄 PDF・PNG・JPEGに対応 / OCRで自動読み取りします</p>
+                </div>
+
+                <div id="ocrProgress" class="progress" style="display: none;"></div>
+
+                <form id="userForm" style="margin-top: 30px;">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>受給者証番号 *</label>
+                            <input type="text" id="certificateNumber" required>
+                        </div>
+                        <div class="form-group">
+                            <label>氏名 *</label>
+                            <input type="text" id="userName" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>支給市町村番号</label>
+                            <input type="text" id="cityCode" placeholder="131148">
+                        </div>
+                        <div class="form-group">
+                            <label>障害支援区分</label>
+                            <select id="supportLevel">
+                                <option value="">なし</option>
+                                <option value="21">区分1</option>
+                                <option value="22">区分2</option>
+                                <option value="23">区分3</option>
+                                <option value="24">区分4</option>
+                                <option value="25">区分5</option>
+                                <option value="26">区分6</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>認定有効期間 開始日</label>
+                            <input type="date" id="validFrom">
+                        </div>
+                        <div class="form-group">
+                            <label>認定有効期間 終了日</label>
+                            <input type="date" id="validTo">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>所属ユニット *</label>
+                        <select id="userUnit" required>
+                            <option value="">選択してください</option>
+                            <option value="nakano">Nakano. settle</option>
+                            <option value="nerima">Nerima. settle</option>
+                            <option value="nerima-west">Nerima. settle west</option>
+                        </select>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>交付年月日</label>
+                            <input type="date" id="issueDate">
+                        </div>
+                        <div class="form-group">
+                            <label>利用者負担上限月額</label>
+                            <input type="number" id="userBurdenLimit" value="0">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">💾 登録</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetForm()">🔄 クリア</button>
+                </form>
+
+                <h2 style="margin-top: 40px;">登録済み利用者</h2>
+                <div id="userList" class="user-list"></div>
+            </div>
+
+            <!-- 実績記録タブ -->
+            <div id="records" class="tab-content">
+                <div class="user-selector">
+                    <label style="font-weight: 600; margin-bottom: 10px; display: block;">利用者を選択</label>
+                    <select id="recordUser" onchange="loadRecords()" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px;">
+                        <option value="">利用者を選択してください</option>
+                    </select>
+                </div>
+
+                <div class="calendar-header">
+                    <button class="btn btn-secondary" onclick="changeMonth(-1)">← 前月</button>
+                    <h2 id="currentMonth"></h2>
+                    <button class="btn btn-secondary" onclick="changeMonth(1)">次月 →</button>
+                </div>
+
+                <div id="calendar" class="calendar"></div>
+            </div>
+
+            <!-- 請求データ出力タブ -->
+            <div id="export" class="tab-content">
+                <h2>請求データ出力</h2>
+                
+                <div class="alert alert-info">
+                    <strong>📋 出力内容</strong><br>
+                    ・SE: 訓練等給付費等明細書（様式第三）<br>
+                    ・SV: 共同生活援助サービス提供実績記録票
+                </div>
+
+                <div class="form-group">
+                    <label>対象年月</label>
+                    <input type="month" id="exportMonth">
+                </div>
+
+                <button class="btn btn-success" onclick="exportCSV('SE')">📄 SE（明細書）をダウンロード</button>
+                <button class="btn btn-success" onclick="exportCSV('SV')">📄 SV（実績記録票）をダウンロード</button>
+
+                <div id="exportStatus" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- モーダル：日付選択 -->
+    <div id="dateModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modalDate"></span>の記録
+            </div>
+
+            <div class="form-group">
+                <label>サービス提供の状況</label>
+                <div class="status-options">
+                    <div class="status-option" data-status="○">○（本入居）</div>
+                    <div class="status-option" data-status="入院">入院</div>
+                    <div class="status-option" data-status="外泊">外泊</div>
+                    <div class="status-option" data-status="外泊始">外泊始</div>
+                    <div class="status-option" data-status="外泊終">外泊終</div>
+                    <div class="status-option" data-status="入院終">入院終</div>
+                    <div class="status-option" data-status="入院→外泊">入院→外泊</div>
+                    <div class="status-option" data-status="外泊→入院">外泊→入院</div>
+                    <div class="status-option" data-status="体験">体験</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="saveRecord()">保存</button>
+                <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // データストレージ
+        let users = JSON.parse(localStorage.getItem('gh_users') || '[]');
+        let records = JSON.parse(localStorage.getItem('gh_records') || '{}');
+        
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth();
+        let selectedUserId = null;
+        let selectedDate = null;
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            renderUserList();
+            updateUserSelector();
+            updateCalendar();
+            
+            const today = new Date();
+            document.getElementById('exportMonth').value = 
+                `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        });
+
+        // タブ切り替え
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+
+        // 画像アップロード処理
+        document.getElementById('uploadArea').addEventListener('click', () => {
+            document.getElementById('certificateImage').click();
+        });
+
+        // ドラッグ&ドロップ
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const file = e.dataTransfer.files[0];
+            if (file && (file.type.startsWith('image/') || file.type === 'application/pdf')) {
+                processFile(file);
+            } else {
+                alert('❌ PDFまたは画像ファイルを選択してください');
+            }
+        });
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        }
+
+        async function processFile(file) {
+            if (file.type === 'application/pdf') {
+                await processPDF(file);
+            } else if (file.type.startsWith('image/')) {
+                processImage(file);
+            }
+        }
+
+        async function processPDF(file) {
+            const progress = document.getElementById('ocrProgress');
+            progress.style.display = 'block';
+            progress.textContent = '📄 PDFを読み込み中...';
+
+            try {
+                // PDF.jsが利用可能かチェック
+                if (typeof pdfjsLib === 'undefined') {
+                    throw new Error('PDF.jsライブラリが読み込まれていません');
+                }
+
+                const arrayBuffer = await file.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                const pdf = await loadingTask.promise;
+                
+                progress.textContent = `📄 PDFページ数: ${pdf.numPages} - 処理開始`;
+
+                // 最初の2ページを処理（受給者証は通常1-2ページ）
+                const pagesToProcess = Math.min(2, pdf.numPages);
+                let allText = '';
+
+                for (let pageNum = 1; pageNum <= pagesToProcess; pageNum++) {
+                    progress.textContent = `📄 ${pageNum}/${pagesToProcess}ページ目を読み込み中...`;
+                    
+                    const page = await pdf.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 2.5 });
+                    
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    const renderContext = {
+                        canvasContext: context,
+                        viewport: viewport
+                    };
+
+                    await page.render(renderContext).promise;
+
+                    progress.textContent = `🔍 ${pageNum}/${pagesToProcess}ページ目をOCR処理中...`;
+
+                    // CanvasをBlob経由で処理（より安定）
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    
+                    const result = await Tesseract.recognize(
+                        blob,
+                        'jpn',
+                        {
+                            logger: m => {
+                                if (m.status === 'recognizing text') {
+                                    const percent = Math.round(m.progress * 100);
+                                    progress.textContent = `🔍 ${pageNum}/${pagesToProcess}ページ目 OCR処理中... ${percent}%`;
+                                }
+                            }
+                        }
+                    );
+
+                    allText += result.data.text + '\n\n';
+                    console.log(`ページ${pageNum} OCR結果:`, result.data.text);
+                }
+
+                progress.textContent = '✅ PDF読み取り完了！';
+                console.log('全体のOCR結果:', allText);
+                extractCertificateData(allText);
+                
+                setTimeout(() => {
+                    progress.style.display = 'none';
+                }, 3000);
+
+            } catch (err) {
+                console.error('PDFエラー詳細:', err);
+                progress.textContent = '❌ PDF読み取りに失敗しました';
+                progress.style.display = 'block';
+                
+                // エラー詳細を表示
+                const errorDetail = document.createElement('div');
+                errorDetail.style.cssText = 'color: red; margin-top: 10px; font-size: 0.9em;';
+                errorDetail.textContent = `エラー: ${err.message}`;
+                
+                const progressDiv = document.getElementById('ocrProgress');
+                if (!progressDiv.querySelector('.error-detail')) {
+                    errorDetail.className = 'error-detail';
+                    progressDiv.appendChild(errorDetail);
+                }
+                
+                // 画像として読み込みを試みる
+                setTimeout(() => {
+                    if (confirm('PDFの読み込みに失敗しました。画像として読み込みを試しますか？')) {
+                        processImage(file);
+                    }
+                }, 1000);
+            }
+        }
+
+        function processImage(file) {
+            const progress = document.getElementById('ocrProgress');
+            progress.style.display = 'block';
+            progress.textContent = '🔍 画像を解析中...';
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    // Tesseract.jsが利用可能かチェック
+                    if (typeof Tesseract === 'undefined') {
+                        throw new Error('Tesseract.jsライブラリが読み込まれていません');
+                    }
+
+                    const result = await Tesseract.recognize(
+                        e.target.result,
+                        'jpn',
+                        {
+                            logger: m => {
+                                if (m.status === 'recognizing text') {
+                                    progress.textContent = `🔍 テキスト認識中... ${Math.round(m.progress * 100)}%`;
+                                }
+                            }
+                        }
+                    );
+
+                    progress.textContent = '✅ 読み取り完了！';
+                    console.log('OCR結果:', result.data.text);
+                    extractCertificateData(result.data.text);
+                    
+                    setTimeout(() => {
+                        progress.style.display = 'none';
+                    }, 3000);
+
+                } catch (err) {
+                    console.error('画像OCRエラー:', err);
+                    progress.textContent = '❌ 読み取りに失敗しました';
+                    
+                    const errorDetail = document.createElement('div');
+                    errorDetail.style.cssText = 'color: red; margin-top: 10px; font-size: 0.9em;';
+                    errorDetail.textContent = `エラー: ${err.message}`;
+                    
+                    const progressDiv = document.getElementById('ocrProgress');
+                    const existingError = progressDiv.querySelector('.error-detail');
+                    if (existingError) {
+                        existingError.remove();
+                    }
+                    errorDetail.className = 'error-detail';
+                    progressDiv.appendChild(errorDetail);
+                }
+            };
+
+            reader.onerror = (err) => {
+                console.error('ファイル読み込みエラー:', err);
+                progress.textContent = '❌ ファイルの読み込みに失敗しました';
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function extractCertificateData(text) {
+            console.log('OCR結果:', text);
+            
+            // 受給者証番号（10桁の数字）
+            const certMatch = text.match(/\d{10}/);
+            if (certMatch) {
+                document.getElementById('certificateNumber').value = certMatch[0];
+            }
+
+            // 氏名の抽出
+            const namePatterns = [
+                /氏[\s　]*名[：:\s　]*([^\n\r　]{2,10})/,
+                /受給者氏名[：:\s　]*([^\n\r　]{2,10})/,
+                /フリガナ[\s\S]{0,20}[\r\n]+([^\n\r　]{2,10})/
+            ];
+            
+            for (const pattern of namePatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    const name = match[1].trim().replace(/[0-9]/g, '');
+                    if (name.length >= 2) {
+                        document.getElementById('userName').value = name;
+                        break;
+                    }
+                }
+            }
+
+            // 市町村番号（6桁）
+            const cityPatterns = [
+                /市町村番号[：:\s　]*(\d{6})/,
+                /支給市町村番号[：:\s　]*(\d{6})/,
+                /(\d{6})/  // フォールバック
+            ];
+            
+            for (const pattern of cityPatterns) {
+                const match = text.match(pattern);
+                if (match && match[1] !== certMatch?.[0]) {  // 受給者証番号と重複しないように
+                    document.getElementById('cityCode').value = match[1];
+                    break;
+                }
+            }
+
+            // 障害支援区分
+            const supportLevelMatch = text.match(/区分[　\s]*([１-６1-6])/);
+            if (supportLevelMatch) {
+                const levelNum = supportLevelMatch[1].replace(/[１-６]/g, (s) => 
+                    String.fromCharCode(s.charCodeAt(0) - 0xFEE0));
+                const levelCode = (20 + parseInt(levelNum)).toString();
+                document.getElementById('supportLevel').value = levelCode;
+            }
+
+            // 交付年月日
+            const issueDatePatterns = [
+                /交付年月日[：:\s　]*[令和平成]*(\d{1,2})[年\s　]*(\d{1,2})[月\s　]*(\d{1,2})/,
+                /(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/
+            ];
+            
+            for (const pattern of issueDatePatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    let year = match[1];
+                    const month = match[2].padStart(2, '0');
+                    const day = match[3].padStart(2, '0');
+                    
+                    // 和暦を西暦に変換（令和）
+                    if (year.length <= 2) {
+                        year = (2018 + parseInt(year)).toString();
+                    }
+                    
+                    document.getElementById('issueDate').value = `${year}-${month}-${day}`;
+                    break;
+                }
+            }
+
+            // 認定有効期間
+            const validPeriodPattern = /(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})[^\d]+(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/;
+            const validMatch = text.match(validPeriodPattern);
+            if (validMatch) {
+                const fromDate = `${validMatch[1]}-${validMatch[2].padStart(2, '0')}-${validMatch[3].padStart(2, '0')}`;
+                const toDate = `${validMatch[4]}-${validMatch[5].padStart(2, '0')}-${validMatch[6].padStart(2, '0')}`;
+                document.getElementById('validFrom').value = fromDate;
+                document.getElementById('validTo').value = toDate;
+            }
+
+            // 利用者負担上限額
+            const burdenMatch = text.match(/利用者負担[\s\S]{0,20}?(\d+)[円]/);
+            if (burdenMatch) {
+                document.getElementById('userBurdenLimit').value = burdenMatch[1];
+            }
+
+            alert('📝 読み取り結果を反映しました。内容を確認して必要に応じて修正してください。');
+        }
+
+        // フォーム送信
+        document.getElementById('userForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const user = {
+                id: Date.now().toString(),
+                certificateNumber: document.getElementById('certificateNumber').value,
+                name: document.getElementById('userName').value,
+                cityCode: document.getElementById('cityCode').value || '131148',
+                supportLevel: document.getElementById('supportLevel').value || '22',
+                validFrom: document.getElementById('validFrom').value,
+                validTo: document.getElementById('validTo').value,
+                unit: document.getElementById('userUnit').value,
+                issueDate: document.getElementById('issueDate').value,
+                userBurdenLimit: document.getElementById('userBurdenLimit').value || '0'
+            };
+
+            users.push(user);
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            
+            renderUserList();
+            updateUserSelector();
+            resetForm();
+            
+            alert('✅ 利用者を登録しました！');
+        });
+
+        function resetForm() {
+            document.getElementById('userForm').reset();
+        }
+
+        function renderUserList() {
+            const list = document.getElementById('userList');
+            if (users.length === 0) {
+                list.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">登録された利用者はいません</p>';
+                return;
+            }
+
+            list.innerHTML = users.map(user => `
+                <div class="user-card" onclick="editUser('${user.id}')">
+                    <h3>${user.name}</h3>
+                    <p>📋 受給者証番号: ${user.certificateNumber}</p>
+                    <p>🏠 ユニット: ${getUnitName(user.unit)}</p>
+                    <p>📊 区分: ${getSupportLevelName(user.supportLevel)}</p>
+                    <p>📅 有効期間: ${user.validFrom || '未設定'} ～ ${user.validTo || '未設定'}</p>
+                </div>
+            `).join('');
+        }
+
+        function getUnitName(unit) {
+            const units = {
+                'nakano': 'Nakano. settle',
+                'nerima': 'Nerima. settle',
+                'nerima-west': 'Nerima. settle west'
+            };
+            return units[unit] || unit;
+        }
+
+        function getSupportLevelName(level) {
+            const levels = {
+                '21': '区分1', '22': '区分2', '23': '区分3',
+                '24': '区分4', '25': '区分5', '26': '区分6'
+            };
+            return levels[level] || 'なし';
+        }
+
+        function editUser(userId) {
+            // 編集機能は後で実装
+            alert('編集機能は開発中です');
+        }
+
+        function updateUserSelector() {
+            const select = document.getElementById('recordUser');
+            select.innerHTML = '<option value="">利用者を選択してください</option>' +
+                users.map(u => `<option value="${u.id}">${u.name}</option>`).join('');
+        }
+
+        // カレンダー関連
+        function updateCalendar() {
+            const calendar = document.getElementById('calendar');
+            const monthLabel = document.getElementById('currentMonth');
+            
+            const date = new Date(currentYear, currentMonth, 1);
+            monthLabel.textContent = `${currentYear}年 ${currentMonth + 1}月`;
+
+            const firstDay = date.getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+            let html = '<div class="calendar-grid">';
+            
+            // 曜日ヘッダー
+            ['日', '月', '火', '水', '木', '金', '土'].forEach(day => {
+                html += `<div class="calendar-day header">${day}</div>`;
+            });
+
+            // 空白セル
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="calendar-day disabled"></div>';
+            }
+
+            // 日付セル
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const record = getRecord(selectedUserId, dateStr);
+                
+                const statusClass = record ? getStatusClass(record.status) : '';
+                const statusText = record ? record.status : '';
+
+                html += `
+                    <div class="calendar-day" onclick="openDateModal('${dateStr}')">
+                        <div class="day-number">${day}</div>
+                        ${statusText ? `<div class="day-status ${statusClass}">${statusText}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            html += '</div>';
+            calendar.innerHTML = html;
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            updateCalendar();
+        }
+
+        function loadRecords() {
+            selectedUserId = document.getElementById('recordUser').value;
+            updateCalendar();
+        }
+
+        function getStatusClass(status) {
+            if (status === '○' || status === '○（本入居）') return 'status-ok';
+            if (status.includes('外泊')) return 'status-away';
+            if (status.includes('入院')) return 'status-hospital';
+            return '';
+        }
+
+        function getRecord(userId, date) {
+            if (!userId || !records[userId]) return null;
+            return records[userId][date];
+        }
+
+        // モーダル
+        function openDateModal(dateStr) {
+            if (!selectedUserId) {
+                alert('利用者を選択してください');
+                return;
+            }
+
+            selectedDate = dateStr;
+            document.getElementById('modalDate').textContent = dateStr;
+            
+            // 既存の記録があれば選択状態にする
+            const record = getRecord(selectedUserId, dateStr);
+            document.querySelectorAll('.status-option').forEach(opt => {
+                opt.classList.remove('selected');
+                if (record && opt.dataset.status === record.status) {
+                    opt.classList.add('selected');
+                }
+            });
+
+            document.getElementById('dateModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('dateModal').classList.remove('active');
+        }
+
+        // ステータス選択
+        document.querySelectorAll('.status-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.status-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+
+        function saveRecord() {
+            const selected = document.querySelector('.status-option.selected');
+            if (!selected) {
+                alert('ステータスを選択してください');
+                return;
+            }
+
+            if (!records[selectedUserId]) {
+                records[selectedUserId] = {};
+            }
+
+            records[selectedUserId][selectedDate] = {
+                status: selected.dataset.status,
+                date: selectedDate
+            };
+
+            localStorage.setItem('gh_records', JSON.stringify(records));
+            updateCalendar();
+            closeModal();
+        }
+
+        // CSV出力
+        function exportCSV(type) {
+            const month = document.getElementById('exportMonth').value;
+            if (!month) {
+                alert('対象年月を選択してください');
+                return;
+            }
+
+            const [year, mon] = month.split('-');
+            
+            if (type === 'SE') {
+                generateSE(year, mon);
+            } else if (type === 'SV') {
+                generateSV(year, mon);
+            }
+        }
+
+        function generateSE(year, month) {
+            // 簡易版のSE生成（実際にはもっと複雑）
+            let csv = '"1","1","0","11","J11","0","1321402032","0","1","' + year + month + '","0"\n';
+            
+            users.forEach((user, index) => {
+                const recordCount = countRecordsForMonth(user.id, year, month);
+                if (recordCount > 0) {
+                    // 基本情報レコード
+                    csv += `"2","${index + 2}","J111","01","${year}${month}","${user.cityCode}","1321402032","135001","1","10776","125001","125001","0","0","0","1","10000","10000","2","10776","135001","135001","0","0","0"\n`;
+                }
+            });
+
+            csv += '"3","' + (users.length + 2) + '"\n';
+
+            downloadCSV(csv, `SE${year}${month}.csv`);
+        }
+
+        function generateSV(year, month) {
+            // 簡易版のSV生成
+            let csv = '"1","1","0","32","J61","0","1321402032","0","1","' + year + month + '","0"\n';
+            
+            let lineNum = 2;
+            users.forEach(user => {
+                const monthRecords = getMonthRecords(user.id, year, month);
+                if (Object.keys(monthRecords).length > 0) {
+                    // 基本情報
+                    csv += `"2","${lineNum}","J611","01","${year}${month}","${user.cityCode}","1321402032","${user.certificateNumber}","1801","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","30","0","0"\n`;
+                    lineNum++;
+
+                    // 日別記録
+                    const daysInMonth = new Date(year, month, 0).getDate();
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        const dateStr = `${year}-${month.padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const record = monthRecords[dateStr];
+                        const status = record ? (record.status === '○' || record.status === '○（本入居）' ? '3' : '') : '';
+                        
+                        csv += `"2","${lineNum}","J611","02","${year}${month}","${user.cityCode}","1321402032","${user.certificateNumber}","1801","","${day}","","","","","","","","","","","","","","","","","","","","","","","","","","","${status}"\n`;
+                        lineNum++;
+                    }
+                }
+            });
+
+            csv += `"3","${lineNum}"\n`;
+
+            downloadCSV(csv, `SV${year}${month}.csv`);
+        }
+
+        function countRecordsForMonth(userId, year, month) {
+            if (!records[userId]) return 0;
+            
+            const prefix = `${year}-${month.padStart(2, '0')}`;
+            return Object.keys(records[userId]).filter(date => date.startsWith(prefix)).length;
+        }
+
+        function getMonthRecords(userId, year, month) {
+            if (!records[userId]) return {};
+            
+            const prefix = `${year}-${month.padStart(2, '0')}`;
+            const monthRecords = {};
+            
+            Object.entries(records[userId]).forEach(([date, record]) => {
+                if (date.startsWith(prefix)) {
+                    monthRecords[date] = record;
+                }
+            });
+            
+            return monthRecords;
+        }
+
+        function downloadCSV(content, filename) {
+            const bom = '\uFEFF';
+            const blob = new Blob([bom + content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            
+            document.getElementById('exportStatus').innerHTML = 
+                `<div class="alert alert-success">✅ ${filename} をダウンロードしました</div>`;
+        }
+    </script>
+</body>
+</html>
