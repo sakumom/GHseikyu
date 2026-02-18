@@ -490,6 +490,41 @@
             margin: 8px 0;
             color: #495057;
         }
+
+        /* 建物管理 */
+        .building-sidebar-item {
+            padding: 12px 16px;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+        }
+        .building-sidebar-item:hover { background: #f0f0ff; border-color: #667eea; }
+        .building-sidebar-item.active { background: #667eea; color: white; border-color: #667eea; }
+        .building-sidebar-item.active small { color: #ddd; }
+
+        .building-inner-tabs { display: flex; border-bottom: 2px solid #dee2e6; margin-bottom: 20px; gap: 4px; }
+        .building-inner-tab {
+            padding: 8px 18px;
+            cursor: pointer;
+            border-radius: 6px 6px 0 0;
+            background: #f5f5f5;
+            border: 1px solid #dee2e6;
+            border-bottom: none;
+            font-size: 0.9em;
+        }
+        .building-inner-tab.active { background: white; border-color: #667eea; color: #667eea; font-weight: bold; }
+
+        .building-detail-panel { display: none; }
+        .building-detail-panel.active { display: block; }
+
+        .history-grid { display: grid; grid-template-columns: 120px repeat(12, 1fr); gap: 4px; margin-bottom: 16px; }
+        .history-grid-year { grid-column: 1; font-weight: bold; padding: 6px; background: #f5f5f5; border-radius: 4px; align-self: start; }
+        .history-link { padding: 4px 6px; background: #e8f0fe; color: #667eea; border-radius: 4px; text-align: center; font-size: 0.8em; cursor: pointer; text-decoration: underline; }
+        .history-link:hover { background: #667eea; color: white; }
+        .history-row-label { font-size: 0.75em; color: #888; margin-bottom: 2px; }
     </style>
 </head>
 <body>
@@ -681,22 +716,21 @@
 
                     <h3 class="subsection-header">福祉専門職員配置等加算</h3>
                     <div class="form-group">
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="specialistAllowance" value="福祉専門職員配置等加算">
-                                <label for="specialistAllowance">福祉専門職員配置等加算</label>
-                            </div>
-                        </div>
+                        <select id="specialistAllowance">
+                            <option value="">設定なし</option>
+                            <option value="福祉専門職員配置等加算（Ⅰ）">福祉専門職員配置等加算（Ⅰ）</option>
+                            <option value="福祉専門職員配置等加算（Ⅱ）">福祉専門職員配置等加算（Ⅱ）</option>
+                            <option value="福祉専門職員配置等加算（Ⅲ）">福祉専門職員配置等加算（Ⅲ）</option>
+                        </select>
                     </div>
 
                     <h3 class="subsection-header">視覚・聴覚言語障害者支援体制加算</h3>
                     <div class="form-group">
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="sensorySupport" value="視覚・聴覚言語障害者支援体制加算">
-                                <label for="sensorySupport">視覚・聴覚言語障害者支援体制加算</label>
-                            </div>
-                        </div>
+                        <select id="sensorySupport">
+                            <option value="">設定なし</option>
+                            <option value="視覚・聴覚言語障害者支援体制加算（Ⅰ）">視覚・聴覚言語障害者支援体制加算（Ⅰ）</option>
+                            <option value="視覚・聴覚言語障害者支援体制加算（Ⅱ）">視覚・聴覚言語障害者支援体制加算（Ⅱ）</option>
+                        </select>
                     </div>
 
                     <h3 class="subsection-header">看護職員配置加算</h3>
@@ -711,12 +745,11 @@
 
                     <h3 class="subsection-header">医療連携体制加算</h3>
                     <div class="form-group">
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="medicalCooperation" value="医療連携体制加算（Ⅵ）">
-                                <label for="medicalCooperation">医療連携体制加算（Ⅵ）</label>
-                            </div>
-                        </div>
+                        <select id="medicalCooperation">
+                            <option value="">設定なし</option>
+                            <option value="医療連携体制加算（Ⅵ）">医療連携体制加算（Ⅵ）</option>
+                            <option value="医療連携体制加算（Ⅶ）">医療連携体制加算（Ⅶ）</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -808,22 +841,30 @@
                     <h3 class="subsection-header">減算</h3>
                     <div class="form-group">
                         <label>大規模住居等減算</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="largeScaleReduction" value="大規模住居等減算">
-                                <label for="largeScaleReduction">世帯人数は生活支援員の員数が基準に満たない</label>
-                            </div>
-                        </div>
+                        <select id="largeScaleReduction">
+                            <option value="">設定なし</option>
+                            <option value="大規模住居等減算（入居定員8人以上）">入居定員が８人以上</option>
+                            <option value="大規模住居等減算（入居定員21人以上）">入居定員が21人以上</option>
+                            <option value="大規模住居等減算（一体的な共同生活住居21人以上）">一体的な共同生活住居の入居定員数21以上</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
                         <label>サービス管理責任者の員数が基準に満たない</label>
-                        <div class="checkbox-group">
-                            <div class="checkbox-item">
-                                <input type="checkbox" id="serviceManagerReduction" value="サービス管理責任者不足">
-                                <label for="serviceManagerReduction">サービス管理責任者の員数が基準に満たない</label>
-                            </div>
-                        </div>
+                        <select id="serviceManagerReduction">
+                            <option value="">設定なし</option>
+                            <option value="サービス管理責任者不足（4月目まで）">減算が適用される月から４月目まで</option>
+                            <option value="サービス管理責任者不足（5月以上連続）">５月以上連続して減算の場合</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>世話人又は生活支援員の員数が基準に満たない</label>
+                        <select id="staffReduction">
+                            <option value="">設定なし</option>
+                            <option value="世話人・生活支援員不足（2月目まで）">減算が適用される月から２月目まで</option>
+                            <option value="世話人・生活支援員不足（3月以上連続）">３月以上連続して減算の場合</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -877,93 +918,481 @@
             <!-- 建物管理タブ -->
             <div id="buildings" class="tab-content">
                 <h2 class="section-header">建物（ユニット）管理</h2>
-
-                <div id="buildingList"></div>
-                
-                <button type="button" class="btn btn-info" onclick="addBuilding()">+ 建物を追加</button>
-
-                <div id="buildingInfo" style="margin-top: 40px;"></div>
+                <div style="display:flex; gap:16px; flex-wrap:wrap; margin-bottom:20px;">
+                    <div id="buildingSidebar" style="width:220px; min-width:180px;"></div>
+                    <div id="buildingDetail" style="flex:1; min-width:300px;"></div>
+                </div>
+                <button type="button" class="btn btn-info" onclick="addBuilding()">＋ 建物を追加</button>
             </div>
 
             <!-- 利用者管理タブ -->
             <div id="users" class="tab-content">
-                <h2 class="section-header">利用者登録</h2>
-                
-                <div class="upload-area" id="uploadArea">
-                    <input type="file" id="certificateFile" accept="image/*,application/pdf" style="display: none;" onchange="handleFileUpload(event)">
-                    <p style="font-size: 1.2em; margin-bottom: 10px;">📷 受給者証をアップロード</p>
-                    <p style="color: #666;">クリックまたはドラッグ&ドロップでPDFまたは画像を選択</p>
-                    <p style="color: #999; font-size: 0.9em; margin-top: 10px;">📄 PDF・PNG・JPEGに対応</p>
-                </div>
-
-                <div id="ocrProgress" class="progress" style="display: none;"></div>
-
-                <form id="userForm" style="margin-top: 30px;">
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>受給者証番号 *</label>
-                            <input type="text" id="certificateNumber" required>
-                        </div>
-                        <div class="form-group">
-                            <label>氏名 *</label>
-                            <input type="text" id="userName" required>
-                        </div>
+                <!-- 利用者一覧画面 -->
+                <div id="userListView">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px;">
+                        <h2 class="section-header" style="margin:0;">利用者一覧</h2>
+                        <button type="button" class="btn btn-primary" onclick="showUserNew()" style="background:#e91e8c; border-color:#e91e8c;">＋ 新規登録</button>
                     </div>
-
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>支給市町村番号</label>
-                            <input type="text" id="cityCode" placeholder="131148">
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-size:0.9em;">事業所</span>
+                            <select id="filterFacility" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px;" onchange="renderUserList()">
+                                <option value="">選択してく...</option>
+                                <option value="tokyo">Tokyo. settle</option>
+                            </select>
                         </div>
-                        <div class="form-group">
-                            <label>障害支援区分</label>
-                            <select id="supportLevel">
-                                <option value="">なし</option>
-                                <option value="21">区分1</option>
-                                <option value="22">区分2</option>
-                                <option value="23">区分3</option>
-                                <option value="24">区分4</option>
-                                <option value="25">区分5</option>
-                                <option value="26">区分6</option>
+                        <input type="text" id="filterName" placeholder="利用者名" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px;" oninput="renderUserList()">
+                        <button class="btn btn-primary" onclick="renderUserList()" style="background:#e91e8c; border-color:#e91e8c; padding:6px 16px;">検索</button>
+                        <div style="display:flex; align-items:center; gap:8px; margin-left:8px;">
+                            <span style="font-size:0.9em;">建物</span>
+                            <select id="filterBuilding" style="padding:6px 10px; border:1px solid #ddd; border-radius:6px;" onchange="renderUserList()">
+                                <option value="">選択してください</option>
                             </select>
                         </div>
                     </div>
+                    <div id="userPager" style="margin-bottom:8px;"></div>
+                    <div id="userListCount" style="margin-bottom:8px; font-size:0.9em; color:#555;"></div>
+                    <table style="width:100%; border-collapse:collapse; font-size:0.9em;">
+                        <thead>
+                            <tr style="border-bottom:2px solid #ddd;">
+                                <th style="width:40px;"></th>
+                                <th style="text-align:left; padding:8px; color:#667eea; cursor:pointer;">事業所</th>
+                                <th style="text-align:left; padding:8px; color:#667eea; cursor:pointer;">建物</th>
+                                <th style="text-align:left; padding:8px;">利用者名</th>
+                                <th style="width:120px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="userListBody"></tbody>
+                    </table>
+                </div>
 
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>認定有効期間 開始日</label>
-                            <input type="date" id="validFrom">
-                        </div>
-                        <div class="form-group">
-                            <label>認定有効期間 終了日</label>
-                            <input type="date" id="validTo">
+                <!-- 利用者詳細・編集画面 -->
+                <div id="userDetailView" style="display:none;">
+                    <div style="font-size:0.85em; color:#888; margin-bottom:8px;">
+                        <span style="cursor:pointer; color:#667eea;" onclick="showUserList()">ホーム</span> /
+                        <span style="cursor:pointer; color:#667eea;" onclick="showUserList()">利用者一覧</span> /
+                        <span id="userDetailBreadcrumb"></span>
+                    </div>
+                    <h2 id="userDetailName" style="margin-bottom:16px; font-size:1.4em;"></h2>
+                    <div class="building-inner-tabs" id="userDetailTabs">
+                        <div class="building-inner-tab active" onclick="showUserTab('basic1')">基本情報①</div>
+                        <div class="building-inner-tab" onclick="showUserTab('basic2')">基本情報②</div>
+                        <div class="building-inner-tab" onclick="showUserTab('medical')">既往歴・服薬</div>
+                        <div class="building-inner-tab" onclick="showUserTab('certificate')">受給者証</div>
+                        <div class="building-inner-tab" onclick="showUserTab('calc')">算定情報</div>
+                        <div class="building-inner-tab" onclick="showUserTab('contract')">契約情報</div>
+                        <div class="building-inner-tab" onclick="showUserTab('history')">履歴情報</div>
+                    </div>
+
+                    <!-- 基本情報① -->
+                    <div id="userTab-basic1" class="building-detail-panel active">
+                        <div class="info-card">
+                            <div class="upload-area" id="uploadArea" style="margin-bottom:16px;">
+                                <input type="file" id="certificateFile" accept="image/*,application/pdf" style="display:none;" onchange="handleFileUpload(event)">
+                                <p style="font-size:1em; margin-bottom:6px;">📷 受給者証をアップロード（OCR）</p>
+                                <p style="color:#666; font-size:0.85em;">クリックまたはドラッグ&ドロップ</p>
+                            </div>
+                            <div id="ocrProgress" class="progress" style="display:none;"></div>
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label>事業所</label>
+                                    <input type="text" id="userFacilityName" value="Tokyo. settle" readonly style="background:#f5f5f5;">
+                                </div>
+                                <div class="form-group">
+                                    <label>建物（ユニット）</label>
+                                    <select id="userUnit">
+                                        <option value="">選択してください</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>部屋番号</label>
+                                    <input type="text" id="userRoom">
+                                </div>
+                                <div class="form-group">
+                                    <label>移動日</label>
+                                    <input type="date" id="userMoveDate">
+                                </div>
+                                <div class="form-group">
+                                    <label>利用者名 *</label>
+                                    <input type="text" id="userName">
+                                </div>
+                                <div class="form-group">
+                                    <label>利用者名カナ</label>
+                                    <input type="text" id="userNameKana">
+                                </div>
+                                <div class="form-group">
+                                    <label>性別</label>
+                                    <select id="userGender">
+                                        <option value="">選択</option>
+                                        <option value="男性">男性</option>
+                                        <option value="女性">女性</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>生年月日</label>
+                                    <input type="date" id="userBirthdate">
+                                </div>
+                                <div class="form-group">
+                                    <label>郵便番号</label>
+                                    <input type="text" id="userZip">
+                                </div>
+                                <div class="form-group">
+                                    <label>都道府県</label>
+                                    <input type="text" id="userPrefecture">
+                                </div>
+                                <div class="form-group">
+                                    <label>市区町村</label>
+                                    <input type="text" id="userCity">
+                                </div>
+                                <div class="form-group">
+                                    <label>町名・番地</label>
+                                    <input type="text" id="userAddress">
+                                </div>
+                                <div class="form-group">
+                                    <label>建物名</label>
+                                    <input type="text" id="userBuildingName">
+                                </div>
+                                <div class="form-group">
+                                    <label>電話番号</label>
+                                    <input type="text" id="userTel">
+                                </div>
+                                <div class="form-group">
+                                    <label>携帯電話番号</label>
+                                    <input type="text" id="userMobile">
+                                </div>
+                                <div class="form-group">
+                                    <label>日中活動事業所番号</label>
+                                    <input type="text" id="userDaytimeOrgNo">
+                                </div>
+                                <div class="form-group">
+                                    <label>日中活動事業所名</label>
+                                    <input type="text" id="userDaytimeOrgName">
+                                </div>
+                                <div class="form-group">
+                                    <label>住宅扶助</label>
+                                    <input type="text" id="userHousingAssist">
+                                </div>
+                                <div class="form-group">
+                                    <label>ステータス</label>
+                                    <select id="userStatus">
+                                        <option value="利用中">利用中</option>
+                                        <option value="体験">体験</option>
+                                        <option value="退居">退居</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="margin-top:12px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                                <button type="button" class="btn btn-primary" onclick="saveCurrentUser('basic1')">💾 保存</button>
+                                <a href="#" onclick="return false;" style="color:#667eea; font-size:0.9em;">実績マスタ</a>
+                                <a href="#" onclick="return false;" style="color:#667eea; font-size:0.9em;">個別支援計画</a>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>所属ユニット *</label>
-                        <select id="userUnit" required>
-                            <option value="">選択してください</option>
-                        </select>
+                    <!-- 基本情報② -->
+                    <div id="userTab-basic2" class="building-detail-panel">
+                        <div class="info-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <strong>&lt;緊急連絡先&gt;</strong>
+                                <button type="button" class="btn btn-primary" onclick="addEmergencyContact()" style="background:#e91e8c; border-color:#e91e8c; font-size:0.85em; padding:4px 12px;">新規登録</button>
+                            </div>
+                            <div id="emergencyContactList"></div>
+                            <hr style="margin:20px 0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <strong>&lt;かかりつけ医療機関&gt;</strong>
+                                <button type="button" class="btn btn-primary" onclick="addMedicalFacility()" style="background:#e91e8c; border-color:#e91e8c; font-size:0.85em; padding:4px 12px;">新規登録</button>
+                            </div>
+                            <div id="medicalFacilityList"></div>
+                            <hr style="margin:20px 0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <strong>&lt;性格・趣味など&gt;</strong>
+                                <button type="button" class="btn btn-primary" onclick="editPersonality()" style="background:#e91e8c; border-color:#e91e8c; font-size:0.85em; padding:4px 12px;">編集</button>
+                            </div>
+                            <div id="personalityInfo" style="background:#f9f9f9; border-radius:6px; padding:12px; font-size:0.9em; white-space:pre-wrap;"></div>
+                            <hr style="margin:20px 0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <strong>&lt;入居前の状況・成育歴&gt;</strong>
+                                <button type="button" class="btn btn-primary" onclick="addMoveInHistory()" style="background:#e91e8c; border-color:#e91e8c; font-size:0.85em; padding:4px 12px;">新規登録</button>
+                            </div>
+                            <div id="moveInHistoryList"></div>
+                        </div>
                     </div>
 
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>交付年月日</label>
-                            <input type="date" id="issueDate">
-                        </div>
-                        <div class="form-group">
-                            <label>利用者負担上限月額</label>
-                            <input type="number" id="userBurdenLimit" value="0">
+                    <!-- 既往歴・服薬 -->
+                    <div id="userTab-medical" class="building-detail-panel">
+                        <div class="info-card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <strong>&lt;疾病&gt;</strong>
+                                <button type="button" class="btn btn-primary" onclick="addDisease()" style="background:#e91e8c; border-color:#e91e8c; font-size:0.85em; padding:4px 12px;">新規登録</button>
+                            </div>
+                            <table style="width:100%; border-collapse:collapse; font-size:0.9em; margin-bottom:16px;">
+                                <thead>
+                                    <tr style="border-bottom:1px solid #ddd;">
+                                        <th style="text-align:left; padding:8px; color:#667eea;">病名</th>
+                                        <th style="text-align:left; padding:8px; color:#667eea;">発症年月日</th>
+                                        <th style="text-align:left; padding:8px; color:#667eea;">医療機関名</th>
+                                        <th style="text-align:left; padding:8px; color:#667eea;">備考</th>
+                                        <th style="width:80px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="diseaseList"></tbody>
+                            </table>
+                            <hr style="margin:20px 0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <strong>&lt;服薬&gt;</strong>
+                                <button type="button" class="btn btn-primary" onclick="addMedicine()" style="background:#e91e8c; border-color:#e91e8c; font-size:0.85em; padding:4px 12px;">新規登録</button>
+                            </div>
+                            <div id="medicineList"></div>
+                            <hr style="margin:20px 0;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <strong>&lt;留意点／特記事項&gt;</strong>
+                                <button type="button" class="btn btn-primary" onclick="editMedicalNotes()" style="background:#e91e8c; border-color:#e91e8c; font-size:0.85em; padding:4px 12px;">編集</button>
+                            </div>
+                            <div id="medicalNotes" style="background:#f9f9f9; border-radius:6px; padding:12px; font-size:0.9em; white-space:pre-wrap;"></div>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">💾 登録</button>
-                    <button type="button" class="btn btn-secondary" onclick="resetUserForm()">🔄 クリア</button>
-                </form>
+                    <!-- 受給者証 -->
+                    <div id="userTab-certificate" class="building-detail-panel">
+                        <div class="info-card">
+                            <p style="color:#555; font-size:0.9em; margin-bottom:16px; background:#fff9e6; padding:10px; border-radius:6px; border-left:4px solid #f0a;">
+                                区分変更があった、あるいは有効期限更新があった場合に追加で新規登録して情報を追加して下さい。
+                            </p>
+                            <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+                                <button type="button" class="btn btn-primary" onclick="showCertificateForm()" style="background:#e91e8c; border-color:#e91e8c;">新規登録</button>
+                            </div>
+                            <table style="width:100%; border-collapse:collapse; font-size:0.9em;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid #ddd;">
+                                        <th style="text-align:left; padding:8px; font-weight:600;">認定有効期間</th>
+                                        <th style="text-align:left; padding:8px; font-weight:600;">交付年月日</th>
+                                        <th style="text-align:left; padding:8px; font-weight:600;">受給者証番号</th>
+                                        <th style="text-align:left; padding:8px; font-weight:600;">障害支援区分</th>
+                                        <th style="width:160px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="certificateHistoryList"></tbody>
+                            </table>
+                            <!-- 受給者証編集フォーム -->
+                            <div id="certificateForm" style="display:none; margin-top:24px; border-top:2px solid #ddd; padding-top:20px;">
+                                <h4 style="margin-bottom:16px; color:#e91e8c;">受給者証編集</h4>
+                                <div style="display:flex; flex-direction:column; gap:14px; max-width:700px;">
+                                    <div>
+                                        <label style="color:#e91e8c; font-weight:600;">★受給者証番号</label>
+                                        <input type="text" id="certNo" style="width:100%; margin-top:6px; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                    </div>
+                                    <div class="grid-2">
+                                        <div>
+                                            <label style="color:#e91e8c; font-weight:600;">★支給市町村番号</label>
+                                            <input type="text" id="certCityCode" style="width:100%; margin-top:6px; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                        </div>
+                                        <div>
+                                            <label style="color:#e91e8c; font-weight:600;">★支給市町村名</label>
+                                            <input type="text" id="certCityName" style="width:100%; margin-top:6px; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label>障害種別</label>
+                                        <select id="certDisabilityType" style="width:100%; margin-top:6px; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                            <option value="">選択</option>
+                                            <option value="01:身体障害者">01:身体障害者</option>
+                                            <option value="02:知的障害者">02:知的障害者</option>
+                                            <option value="03:精神障害者">03:精神障害者</option>
+                                            <option value="04:障害児">04:障害児</option>
+                                            <option value="05:難病等対象者">05:難病等対象者</option>
+                                        </select>
+                                        <p style="font-size:0.8em; color:#888; margin-top:4px;">合併している場合、より重度とされている障害種別を選択して下さい。</p>
+                                    </div>
+                                    <div>
+                                        <label style="color:#e91e8c; font-weight:600;">★障害支援区分</label>
+                                        <select id="certSupportLevel" style="width:100%; margin-top:6px; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                            <option value="">なし</option>
+                                            <option value="区分1">区分1</option>
+                                            <option value="区分2">区分2</option>
+                                            <option value="区分3">区分3</option>
+                                            <option value="区分4">区分4</option>
+                                            <option value="区分5">区分5</option>
+                                            <option value="区分6">区分6</option>
+                                            <option value="なし">なし</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="color:#e91e8c; font-weight:600;">★交付年月日</label>
+                                        <input type="date" id="certIssueDate" style="width:100%; margin-top:6px; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                    </div>
+                                    <div>
+                                        <label style="color:#e91e8c; font-weight:600;">★認定有効期間</label>
+                                        <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+                                            <input type="date" id="certValidFrom" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                            <span>〜</span>
+                                            <input type="date" id="certValidTo" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label style="color:#e91e8c; font-weight:600;">★負担上限月額</label>
+                                        <input type="number" id="certBurdenLimit" value="0" style="width:100%; margin-top:6px; padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                    </div>
+                                    <div>
+                                        <label style="color:#e91e8c; font-weight:600;">★上限月額適用期間</label>
+                                        <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+                                            <input type="date" id="certLimitFrom" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                            <span>〜</span>
+                                            <input type="date" id="certLimitTo" style="padding:10px; border:1px solid #ddd; border-radius:6px;">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label>
+                                            <input type="checkbox" id="certUpperMgmt"> 上限額管理対象者 <span style="font-size:0.8em; color:#888;">※該当の利用者の場合は、チェックを付ける。</span>
+                                        </label>
+                                        <div style="display:flex; gap:16px; margin-top:8px;" id="certUpperMgmtArea">
+                                            <div style="flex:1;">
+                                                <label style="font-size:0.9em;">上限額管理事業所番号</label>
+                                                <input type="text" id="certUpperMgmtOrgNo" style="width:100%; margin-top:4px; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                            </div>
+                                            <div style="flex:1;">
+                                                <label style="font-size:0.9em;">上限額管理事業所名</label>
+                                                <input type="text" id="certUpperMgmtOrgName" style="width:100%; margin-top:4px; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label>
+                                            <input type="checkbox" id="certSpecialDisabled"> 特定障害者特別給付費対象者 <span style="font-size:0.8em; color:#888;">※該当の利用者の場合は、チェックを付ける。</span>
+                                        </label>
+                                        <div id="certSpecialDisabledArea" style="margin-top:8px; display:none;">
+                                            <label style="color:#e91e8c; font-weight:600;">★特定障害者特別給付費</label>
+                                            <input type="number" id="certSpecialAmount" style="width:100%; margin-top:4px; padding:8px; border:1px solid #ddd; border-radius:6px;" value="0">
+                                            <label style="color:#e91e8c; font-weight:600; margin-top:8px; display:block;">★特定障害者適用期間</label>
+                                            <div style="display:flex; gap:8px; align-items:center; margin-top:4px;">
+                                                <input type="date" id="certSpecialFrom" style="padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                                <span>〜</span>
+                                                <input type="date" id="certSpecialTo" style="padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label>
+                                            <input type="checkbox" id="certMunicipalityAssist"> 自治体助成 <span style="font-size:0.8em; color:#888;">※未記載OK。特別な医療助成対象者の場合のみ記入します。</span>
+                                        </label>
+                                        <div id="certMunicipalityArea" style="margin-top:8px; display:none;">
+                                            <div class="grid-2">
+                                                <div>
+                                                    <label style="font-size:0.9em;">助成自治体番号</label>
+                                                    <input type="text" id="certMuniOrgNo" style="width:100%; margin-top:4px; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-size:0.9em;">自治体助成率</label>
+                                                    <input type="text" id="certMuniRate" style="width:100%; margin-top:4px; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-size:0.9em;">自治体助成額</label>
+                                                    <input type="number" id="certMuniAmount" style="width:100%; margin-top:4px; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-size:0.9em;">市町村上限額</label>
+                                                    <input type="number" id="certMuniMax" style="width:100%; margin-top:4px; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                                </div>
+                                                <div>
+                                                    <label style="font-size:0.9em;">支給量</label>
+                                                    <input type="text" id="certMuniGrant" style="width:100%; margin-top:4px; padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                                </div>
+                                            </div>
+                                            <div style="margin-top:8px;">
+                                                <label style="font-size:0.9em;">支給決定期間</label>
+                                                <div style="display:flex; gap:8px; align-items:center; margin-top:4px;">
+                                                    <input type="date" id="certGrantFrom" style="padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                                    <span>〜</span>
+                                                    <input type="date" id="certGrantTo" style="padding:8px; border:1px solid #ddd; border-radius:6px;">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex; gap:12px;">
+                                        <button type="button" class="btn btn-primary" onclick="saveCertificate()" style="background:#e91e8c; border-color:#e91e8c;">保存する</button>
+                                        <button type="button" class="btn btn-secondary" onclick="cancelCertificateForm()">キャンセル</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                <h2 class="section-header">登録済み利用者</h2>
-                <div id="userList" class="user-list"></div>
+                    <!-- 算定情報 -->
+                    <div id="userTab-calc" class="building-detail-panel">
+                        <div class="info-card">
+                            <p style="font-size:0.9em; color:#555; margin-bottom:16px;">33:共同生活援助（介護サービス包括型）の設定</p>
+                            <div class="form-group">
+                                <label>重度障害者支援加算</label>
+                                <select id="calcSevereDisability" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-top:4px;">
+                                    <option value="">設定なし</option>
+                                    <option value="重度障害者支援加算（Ⅰ）">重度障害者支援加算（Ⅰ）</option>
+                                    <option value="重度障害者支援加算（Ⅱ）">重度障害者支援加算（Ⅱ）</option>
+                                    <option value="重度障害者支援加算（行動関連項目１８点以上）">重度障害者支援加算（行動関連項目１８点以上）</option>
+                                </select>
+                            </div>
+                            <div style="margin:12px 0; display:flex; flex-direction:column; gap:8px;">
+                                <label><input type="checkbox" id="calcRegionalTransition"> 地域生活移行個別支援特別加算</label>
+                                <label><input type="checkbox" id="calcMentalTransition"> 精神障害者地域移行特別加算</label>
+                                <label><input type="checkbox" id="calcBehaviorTransition"> 強度行動障害者地域移行特別加算</label>
+                                <label><input type="checkbox" id="calcBehaviorExperience"> 強度行動障害者体験利用加算</label>
+                                <p style="font-size:0.8em; color:#888; margin-left:20px;">重度障害者支援加算が算定される場合は算定されません。</p>
+                                <label><input type="checkbox" id="calcMedicalCare"> 医療的ケア対応支援加算</label>
+                                <p style="font-size:0.8em; color:#888; margin-left:20px;">重度障害者支援加算（Ⅰ）又は医療連携体制加算が算定される場合は算定されません。</p>
+                                <label><input type="checkbox" id="calcIndividualCare"> 個人単位で居宅介護等を利用する場合</label>
+                            </div>
+                            <div class="form-group" style="margin-top:12px;">
+                                <label>共同生活援助計画が作成されていない</label>
+                                <select id="calcNoPlanReduction" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-top:4px;">
+                                    <option value="">設定なし</option>
+                                    <option value="共同生活援助計画未作成（2月目まで）">減算が適用される月から２月目まで</option>
+                                    <option value="共同生活援助計画未作成（3月以上）">３月以上連続して減算の場合</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-top:12px;">
+                                <label>大規模住居等減算</label>
+                                <select id="calcLargeScaleReduction" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; margin-top:4px;">
+                                    <option value="">設定なし</option>
+                                    <option value="大規模住居等減算（入居定員8人以上）">入居定員が８人以上</option>
+                                    <option value="大規模住居等減算（入居定員21人以上）">入居定員が21人以上</option>
+                                    <option value="大規模住居等減算（一体的な共同生活住居21人以上）">一体的な共同生活住居の入居定員数21以上</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveCurrentUser('calc')" style="margin-top:16px; background:#e91e8c; border-color:#e91e8c;">保存する</button>
+                        </div>
+                    </div>
+
+                    <!-- 契約情報 -->
+                    <div id="userTab-contract" class="building-detail-panel">
+                        <div class="info-card">
+                            <p style="font-size:0.85em; color:#555; margin-bottom:16px; background:#fff9e6; padding:10px; border-radius:6px;">
+                                （場合によっては）体験入居契約時あるいは本入居契約時には「新規」の契約内容報告書を行政に提出する必要があります。また、「終了」の契約内容報告書は退居あるいは亡くなられた場合に提出する必要があります。
+                            </p>
+                            <div style="margin-bottom:12px;">
+                                <strong id="contractFacilityLabel">Tokyo. settle</strong>
+                                <button type="button" class="btn btn-primary" onclick="addContract()" style="float:right; background:#e91e8c; border-color:#e91e8c; font-size:0.85em;">新規登録</button>
+                            </div>
+                            <table style="width:100%; border-collapse:collapse; font-size:0.9em;">
+                                <thead>
+                                    <tr style="border-bottom:1px solid #ddd;">
+                                        <th style="text-align:left; padding:8px;">サービス開始日</th>
+                                        <th style="text-align:left; padding:8px;">体験開始日</th>
+                                        <th style="text-align:left; padding:8px;">契約開始日</th>
+                                        <th style="text-align:left; padding:8px;">更新日時</th>
+                                        <th style="width:200px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contractList"></tbody>
+                            </table>
+                            <div id="contractDetail" style="margin-top:20px; border-top:1px solid #eee; padding-top:16px; display:none; font-size:0.9em;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 履歴情報 -->
+                    <div id="userTab-history" class="building-detail-panel">
+                        <div class="info-card">
+                            <div id="userHistoryContent"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- 実績記録タブ -->
@@ -1064,7 +1493,6 @@
             updateCalendar();
             updateUnitOptions();
             displayFacilityInfo();
-            displayBuildingInfo();
             
             const today = new Date();
             document.getElementById('exportMonth').value = 
@@ -1098,13 +1526,22 @@
                 document.getElementById('daySupport').value = facility.daySupport || '';
                 document.getElementById('infectionControl').value = facility.infectionControl || '';
 
+                // セレクトボックスの復元（ドロップダウン化した加算・減算）
+                const selects = [
+                    'specialistAllowance', 'sensorySupport', 'medicalCooperation',
+                    'largeScaleReduction', 'serviceManagerReduction', 'staffReduction'
+                ];
+                selects.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && facility[id]) el.value = facility[id];
+                });
+
                 // チェックボックスの復元
                 const checkboxes = [
-                    'specialistAllowance', 'sensorySupport', 'nurseAllowance', 
-                    'medicalCooperation', 'medicalCooperationRecord', 'commuterSupport',
+                    'nurseAllowance', 'medicalCooperationRecord', 'commuterSupport',
                     'housingSupport', 'transitionSupport', 'peerSupport',
-                    'coreStaffing', 'brainInjurySupport', 'largeScaleReduction',
-                    'serviceManagerReduction', 'restraintReduction', 'abusePreventionReduction',
+                    'coreStaffing', 'brainInjurySupport',
+                    'restraintReduction', 'abusePreventionReduction',
                     'bcpReduction', 'infoDisclosureReduction'
                 ];
 
@@ -1136,13 +1573,22 @@
                 infectionControl: document.getElementById('infectionControl').value
             };
 
+            // セレクトボックスの保存（ドロップダウン化した加算・減算）
+            const selects = [
+                'specialistAllowance', 'sensorySupport', 'medicalCooperation',
+                'largeScaleReduction', 'serviceManagerReduction', 'staffReduction'
+            ];
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                facility[id] = el ? el.value : '';
+            });
+
             // チェックボックスの保存
             const checkboxes = [
-                'specialistAllowance', 'sensorySupport', 'nurseAllowance',
-                'medicalCooperation', 'medicalCooperationRecord', 'commuterSupport',
+                'nurseAllowance', 'medicalCooperationRecord', 'commuterSupport',
                 'housingSupport', 'transitionSupport', 'peerSupport',
-                'coreStaffing', 'brainInjurySupport', 'largeScaleReduction',
-                'serviceManagerReduction', 'restraintReduction', 'abusePreventionReduction',
+                'coreStaffing', 'brainInjurySupport',
+                'restraintReduction', 'abusePreventionReduction',
                 'bcpReduction', 'infoDisclosureReduction'
             ];
 
@@ -1171,29 +1617,33 @@
             if (facility.treatmentImprovement) activeAdditions.push(facility.treatmentImprovement);
             if (facility.daySupport) activeAdditions.push(facility.daySupport);
             if (facility.infectionControl) activeAdditions.push(facility.infectionControl);
+            // ドロップダウン化した加算
+            if (facility.specialistAllowance) activeAdditions.push(facility.specialistAllowance);
+            if (facility.sensorySupport) activeAdditions.push(facility.sensorySupport);
+            if (facility.medicalCooperation) activeAdditions.push(facility.medicalCooperation);
 
             const additions = {
-                specialistAllowance: '福祉専門職員配置等加算',
-                sensorySupport: '視覚・聴覚言語障害者支援体制加算',
                 nurseAllowance: '看護職員配置加算',
-                medicalCooperation: '医療連携体制加算（Ⅵ）',
                 medicalCooperationRecord: '医療連携（実績記録等の整備に必要）',
                 commuterSupport: '通勤者生活支援加算',
                 housingSupport: '居住支援体制',
                 transitionSupport: '移行支援住体制',
                 peerSupport: 'ピアサポート実施加算',
-                coreStaffing: '中核的配置等加算体制',
-                brainInjurySupport: '高次脳機能部者支援体制'
+                coreStaffing: '中核的人材配置体制',
+                brainInjurySupport: '高次脳機能障害者支援体制'
             };
 
             const reductions = {
-                largeScaleReduction: '大規模住居等減算',
-                serviceManagerReduction: 'サービス管理責任者不足',
                 restraintReduction: '身体拘束廃止未実施減算',
                 abusePreventionReduction: '虐待防止措置未実施減算',
                 bcpReduction: '業務継続計画未策定減算',
                 infoDisclosureReduction: '情報公表未報告減算'
             };
+
+            // ドロップダウン化した減算
+            if (facility.largeScaleReduction) activeReductions.push(facility.largeScaleReduction);
+            if (facility.serviceManagerReduction) activeReductions.push(facility.serviceManagerReduction);
+            if (facility.staffReduction) activeReductions.push(facility.staffReduction);
 
             Object.keys(additions).forEach(key => {
                 if (facility[key]) activeAdditions.push(additions[key]);
@@ -1241,87 +1691,361 @@
 
         // ========== 建物管理 ==========
 
+        let selectedBuildingId = null;
+        let selectedBuildingInnerTab = 'basic'; // basic | calc | users | history
+
         function addBuilding() {
+            const now = new Date();
             const building = {
                 id: Date.now().toString(),
-                name: '',
-                capacity: 0,
-                nightSupport: false,
-                medicalCooperation: false,
-                largeScale: false
+                name: '新しい建物',
+                nameKana: '',
+                manager: '',
+                zip: '',
+                prefecture: '',
+                city: '',
+                address: '',
+                buildingName: '',
+                tel: '',
+                fax: '',
+                email: '',
+                totalRooms: 0,
+                nightSupportType: '', // 夜間支援等体制加算の選択値
+                largeScaleReduction: '',
+                history: {
+                    basic: {},
+                    calc: {},
+                    users: {}
+                }
             };
             buildings.push(building);
+            localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+            selectedBuildingId = building.id;
             renderBuildingList();
         }
 
         function removeBuilding(id) {
             if (confirm('この建物を削除しますか？')) {
                 buildings = buildings.filter(b => b.id !== id);
+                if (selectedBuildingId === id) selectedBuildingId = buildings.length > 0 ? buildings[0].id : null;
                 localStorage.setItem('gh_buildings', JSON.stringify(buildings));
                 renderBuildingList();
                 updateUnitOptions();
-                displayBuildingInfo();
             }
         }
 
         function renderBuildingList() {
-            const container = document.getElementById('buildingList');
             if (buildings.length === 0) {
                 buildings = [
-                    { id: 'nakano', name: 'Nakano. settle', capacity: 7, nightSupport: true, medicalCooperation: true, largeScale: false },
-                    { id: 'nerima', name: 'Nerima. settle', capacity: 5, nightSupport: true, medicalCooperation: false, largeScale: false },
-                    { id: 'nerima-west', name: 'Nerima. settle west', capacity: 8, nightSupport: false, medicalCooperation: false, largeScale: true }
+                    { id: 'nakano', name: 'Nakano. settle', nameKana: 'ナカノセトル', manager: '鈴木', zip: '165-0026', prefecture: '東京都', city: '中野区', address: '新井5-30-4', buildingName: 'スクエア新井薬師前', tel: '', fax: '', email: '', totalRooms: 5, nightSupportType: '', largeScaleReduction: '', history: {basic:{},calc:{},users:{}} },
+                    { id: 'nerima', name: 'Nerima. settle', nameKana: 'ネリマセトル', manager: '', zip: '', prefecture: '', city: '', address: '', buildingName: '', tel: '', fax: '', email: '', totalRooms: 5, nightSupportType: '', largeScaleReduction: '', history: {basic:{},calc:{},users:{}} },
+                    { id: 'nerima-west', name: 'Nerima. settle west', nameKana: 'ネリマセトルウエスト', manager: '', zip: '', prefecture: '', city: '', address: '', buildingName: '', tel: '', fax: '', email: '', totalRooms: 8, nightSupportType: '', largeScaleReduction: '大規模住居等減算（入居定員8人以上）', history: {basic:{},calc:{},users:{}} }
                 ];
                 localStorage.setItem('gh_buildings', JSON.stringify(buildings));
             }
 
-            container.innerHTML = buildings.map(building => `
-                <div class="info-card">
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>建物名</label>
-                            <input type="text" value="${building.name}" onchange="updateBuilding('${building.id}', 'name', this.value)">
-                        </div>
-                        <div class="form-group">
-                            <label>定員</label>
-                            <input type="number" value="${building.capacity}" onchange="updateBuilding('${building.id}', 'capacity', this.value)">
-                        </div>
-                    </div>
-                    <div class="grid-3">
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" ${building.nightSupport ? 'checked' : ''} onchange="updateBuilding('${building.id}', 'nightSupport', this.checked)">
-                                夜間支援あり
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" ${building.medicalCooperation ? 'checked' : ''} onchange="updateBuilding('${building.id}', 'medicalCooperation', this.checked)">
-                                医療連携あり
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" ${building.largeScale ? 'checked' : ''} onchange="updateBuilding('${building.id}', 'largeScale', this.checked)">
-                                大規模減算
-                            </label>
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-secondary" onclick="removeBuilding('${building.id}')">🗑️ 削除</button>
+            // 初期選択
+            if (!selectedBuildingId && buildings.length > 0) selectedBuildingId = buildings[0].id;
+
+            // サイドバー
+            const sidebar = document.getElementById('buildingSidebar');
+            sidebar.innerHTML = buildings.map(b => `
+                <div class="building-sidebar-item ${b.id === selectedBuildingId ? 'active' : ''}" onclick="selectBuilding('${b.id}')">
+                    <strong>${b.name}</strong><br>
+                    <small>定員 ${b.totalRooms}人</small>
                 </div>
             `).join('');
 
+            renderBuildingDetail();
             updateUnitOptions();
-            displayBuildingInfo();
+        }
+
+        function selectBuilding(id) {
+            selectedBuildingId = id;
+            selectedBuildingInnerTab = 'basic';
+            renderBuildingList();
+        }
+
+        function selectBuildingInnerTab(tab) {
+            selectedBuildingInnerTab = tab;
+            renderBuildingDetail();
+        }
+
+        function renderBuildingDetail() {
+            const container = document.getElementById('buildingDetail');
+            const b = buildings.find(b => b.id === selectedBuildingId);
+            if (!b) { container.innerHTML = '<p style="color:#888;">建物を選択してください</p>'; return; }
+
+            // 夜間支援等体制加算の選択肢生成
+            const nightOpts = generateNightSupportOptions(b.nightSupportType);
+            // 大規模住居等減算の選択肢
+            const largeOpts = [
+                ['', '設定なし'],
+                ['大規模住居等減算（入居定員8人以上）', '入居定員が８人以上'],
+                ['大規模住居等減算（入居定員21人以上）', '入居定員が21人以上'],
+                ['大規模住居等減算（一体的な共同生活住居21人以上）', '一体的な共同生活住居の入居定員数21以上']
+            ].map(([v, l]) => `<option value="${v}" ${b.largeScaleReduction === v ? 'selected' : ''}>${l}</option>`).join('');
+
+            // 利用者タブ
+            const buildingUsers = users.filter(u => u.unit === b.id);
+
+            // 履歴タブ
+            const historyHtml = renderHistoryTab(b);
+
+            container.innerHTML = `
+                <div style="margin-bottom:12px;">
+                    <strong style="font-size:1.1em;">${facility.facilityName || 'Tokyo. settle'} ${b.name}</strong>
+                    <button type="button" class="btn btn-secondary" style="float:right;font-size:0.8em;padding:4px 10px;" onclick="removeBuilding('${b.id}')">🗑️ 削除</button>
+                </div>
+                <div class="building-inner-tabs">
+                    <div class="building-inner-tab ${selectedBuildingInnerTab==='basic'?'active':''}" onclick="selectBuildingInnerTab('basic')">基本情報</div>
+                    <div class="building-inner-tab ${selectedBuildingInnerTab==='calc'?'active':''}" onclick="selectBuildingInnerTab('calc')">算定情報</div>
+                    <div class="building-inner-tab ${selectedBuildingInnerTab==='users'?'active':''}" onclick="selectBuildingInnerTab('users')">利用者</div>
+                    <div class="building-inner-tab ${selectedBuildingInnerTab==='history'?'active':''}" onclick="selectBuildingInnerTab('history')">履歴情報</div>
+                </div>
+
+                <!-- 基本情報 -->
+                <div class="building-detail-panel ${selectedBuildingInnerTab==='basic'?'active':''}">
+                    <div class="info-card">
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label>建物名</label>
+                                <input type="text" value="${b.name}" onchange="updateBuilding('${b.id}','name',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>建物名カナ</label>
+                                <input type="text" value="${b.nameKana||''}" onchange="updateBuilding('${b.id}','nameKana',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>管理者</label>
+                                <input type="text" value="${b.manager||''}" onchange="updateBuilding('${b.id}','manager',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>郵便番号</label>
+                                <input type="text" value="${b.zip||''}" placeholder="000-0000" onchange="updateBuilding('${b.id}','zip',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>都道府県</label>
+                                <input type="text" value="${b.prefecture||''}" onchange="updateBuilding('${b.id}','prefecture',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>市区町村</label>
+                                <input type="text" value="${b.city||''}" onchange="updateBuilding('${b.id}','city',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>町名・番地</label>
+                                <input type="text" value="${b.address||''}" onchange="updateBuilding('${b.id}','address',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>住所建物名</label>
+                                <input type="text" value="${b.buildingName||''}" onchange="updateBuilding('${b.id}','buildingName',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>電話番号</label>
+                                <input type="text" value="${b.tel||''}" onchange="updateBuilding('${b.id}','tel',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>FAX</label>
+                                <input type="text" value="${b.fax||''}" onchange="updateBuilding('${b.id}','fax',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>メールアドレス</label>
+                                <input type="text" value="${b.email||''}" onchange="updateBuilding('${b.id}','email',this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label>総居室数</label>
+                                <input type="number" value="${b.totalRooms||0}" onchange="updateBuilding('${b.id}','totalRooms',parseInt(this.value))">
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="saveBuildingHistory('${b.id}','basic')">💾 保存</button>
+                        <a href="#" onclick="saveBuildingHistory('${b.id}','basic'); return false;" style="margin-left:12px; font-size:0.85em; color:#667eea;">実績マスタ</a>
+                    </div>
+                </div>
+
+                <!-- 算定情報 -->
+                <div class="building-detail-panel ${selectedBuildingInnerTab==='calc'?'active':''}">
+                    <div class="info-card">
+                        <div class="form-group">
+                            <label>夜間支援等体制加算</label>
+                            <select onchange="updateBuilding('${b.id}','nightSupportType',this.value)">
+                                ${nightOpts}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>大規模住居等減算</label>
+                            <select onchange="updateBuilding('${b.id}','largeScaleReduction',this.value)">
+                                ${largeOpts}
+                            </select>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="saveBuildingHistory('${b.id}','calc')">💾 保存</button>
+                    </div>
+                </div>
+
+                <!-- 利用者 -->
+                <div class="building-detail-panel ${selectedBuildingInnerTab==='users'?'active':''}">
+                    <div class="info-card">
+                        <p style="color:#888; margin-bottom:12px;">事業所 ${facility.facilityName||'Tokyo. settle'} の利用者一覧</p>
+                        <p style="margin-bottom:12px;">${buildingUsers.length} 件の利用者を表示</p>
+                        ${buildingUsers.length === 0
+                            ? '<p style="color:#aaa;">この建物に利用者が登録されていません</p>'
+                            : buildingUsers.map(u => `
+                                <div style="padding:10px 0; border-bottom:1px solid #eee; color:#667eea; cursor:pointer;" onclick="showTab('users')">
+                                    ${u.name}
+                                </div>`).join('')
+                        }
+                    </div>
+                </div>
+
+                <!-- 履歴情報 -->
+                <div class="building-detail-panel ${selectedBuildingInnerTab==='history'?'active':''}">
+                    <div class="info-card">
+                        ${historyHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateNightSupportOptions(selected) {
+            const opts = [['', '設定なし']];
+            // Ⅰ: 1人〜30人
+            for (let i = 1; i <= 30; i++) {
+                opts.push([`夜間支援等体制加算（Ⅰ）${i}人`, `夜間支援等体制加算（Ⅰ）　${i}人`]);
+            }
+            // Ⅱ: 4人以下〜30人
+            opts.push([`夜間支援等体制加算（Ⅱ）4人以下`, `夜間支援等体制加算（Ⅱ）　4人以下`]);
+            for (let i = 5; i <= 30; i++) {
+                opts.push([`夜間支援等体制加算（Ⅱ）${i}人`, `夜間支援等体制加算（Ⅱ）　${i}人`]);
+            }
+            // Ⅲ
+            opts.push(['夜間支援等体制加算（Ⅲ）', '夜間支援等体制加算（Ⅲ）']);
+
+            return opts.map(([v, l]) => `<option value="${v}" ${selected===v?'selected':''}>${l}</option>`).join('');
+        }
+
+        function renderHistoryTab(b) {
+            if (!b.history) b.history = {basic:{}, calc:{}, users:{}};
+
+            // 全てのキー（YYYY-MM）を集める
+            const allKeys = new Set([
+                ...Object.keys(b.history.basic||{}),
+                ...Object.keys(b.history.calc||{}),
+                ...Object.keys(b.history.users||{})
+            ]);
+
+            if (allKeys.size === 0) return '<p style="color:#aaa;">変更履歴はまだありません</p>';
+
+            // 年ごとにグループ化
+            const byYear = {};
+            allKeys.forEach(k => {
+                const [y] = k.split('-');
+                if (!byYear[y]) byYear[y] = [];
+                byYear[y].push(k);
+            });
+
+            const years = Object.keys(byYear).sort((a,b)=>b-a);
+
+            const rows = ['basic','calc','users'];
+            const rowLabels = {basic:'基本情報', calc:'算定情報', users:'利用者'};
+
+            let html = '';
+            years.forEach(year => {
+                const months = byYear[year].map(k=>k.split('-')[1]).filter((v,i,a)=>a.indexOf(v)===i).sort((a,b)=>a-b);
+
+                // 最新年は分けて表示
+                const isLatest = year === years[0];
+                if (isLatest) {
+                    html += `<div style="margin-bottom:16px;">`;
+                    rows.forEach(row => {
+                        const latestMonths = months.filter(m => b.history[row] && b.history[row][`${year}-${m}`]);
+                        if (latestMonths.length > 0) {
+                            html += `<div style="display:flex; gap:8px; margin-bottom:6px; align-items:center;">
+                                <span style="width:80px; font-size:0.85em; color:#888;">${rowLabels[row]}</span>
+                                ${latestMonths.map(m=>`<span class="history-link" onclick="viewHistory('${b.id}','${row}','${year}-${m}')">${year}年${parseInt(m)}月</span>`).join('')}
+                            </div>`;
+                        }
+                    });
+                    html += `</div>`;
+                }
+
+                html += `<div style="margin-bottom:16px;">`;
+                rows.forEach(row => {
+                    const histMonths = months.filter(m => b.history[row] && b.history[row][`${year}-${m}`]);
+                    if (!isLatest && histMonths.length > 0) {
+                        html += `<div style="display:flex; gap:6px; margin-bottom:6px; align-items:center; flex-wrap:wrap;">
+                            <span style="width:80px; font-size:0.85em; color:#888;">${rowLabels[row]}</span>
+                            ${histMonths.map(m=>`<span class="history-link" onclick="viewHistory('${b.id}','${row}','${year}-${m}')">${year}年${parseInt(m)}月</span>`).join('')}
+                        </div>`;
+                    }
+                });
+                html += `</div>`;
+            });
+
+            return html;
+        }
+
+        function saveBuildingHistory(id, type) {
+            const b = buildings.find(b => b.id === id);
+            if (!b) return;
+            if (!b.history) b.history = {basic:{}, calc:{}, users:{}};
+
+            const now = new Date();
+            const key = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+            if (type === 'basic') {
+                b.history.basic[key] = {
+                    name: b.name, nameKana: b.nameKana, manager: b.manager,
+                    zip: b.zip, prefecture: b.prefecture, city: b.city,
+                    address: b.address, buildingName: b.buildingName,
+                    tel: b.tel, fax: b.fax, email: b.email, totalRooms: b.totalRooms,
+                    savedAt: now.toISOString()
+                };
+            } else if (type === 'calc') {
+                b.history.calc[key] = {
+                    nightSupportType: b.nightSupportType,
+                    largeScaleReduction: b.largeScaleReduction,
+                    savedAt: now.toISOString()
+                };
+            } else if (type === 'users') {
+                b.history.users[key] = {
+                    users: users.filter(u => u.unit === id).map(u => u.name),
+                    savedAt: now.toISOString()
+                };
+            }
+
+            localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+            alert(`✅ ${['basic','calc','users'].includes(type) ? {basic:'基本情報',calc:'算定情報',users:'利用者'}[type] : type}を保存しました！`);
+            renderBuildingDetail();
+        }
+
+        function viewHistory(buildingId, type, key) {
+            const b = buildings.find(b => b.id === buildingId);
+            if (!b || !b.history || !b.history[type] || !b.history[type][key]) return;
+            const data = b.history[type][key];
+            const labels = {basic:'基本情報', calc:'算定情報', users:'利用者'};
+            const [y, m] = key.split('-');
+            let msg = `【${b.name} - ${labels[type]} ${y}年${parseInt(m)}月】\n`;
+            msg += `保存日時: ${data.savedAt ? new Date(data.savedAt).toLocaleString('ja-JP') : '不明'}\n\n`;
+            if (type === 'users') {
+                msg += `利用者: ${data.users && data.users.length > 0 ? data.users.join(', ') : 'なし'}`;
+            } else {
+                Object.entries(data).forEach(([k,v]) => {
+                    if (k !== 'savedAt') msg += `${k}: ${v}\n`;
+                });
+            }
+            alert(msg);
         }
 
         function updateBuilding(id, field, value) {
             const building = buildings.find(b => b.id === id);
             if (building) {
-                building[field] = field === 'capacity' ? parseInt(value) : value;
+                building[field] = value;
                 localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+                if (field === 'name') {
+                    renderBuildingList(); // サイドバーも更新
+                } else {
+                    renderBuildingDetail();
+                }
                 updateUnitOptions();
-                displayBuildingInfo();
             }
         }
 
@@ -1331,52 +2055,33 @@
                 buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
         }
 
-        function displayBuildingInfo() {
-            const container = document.getElementById('buildingInfo');
-            if (buildings.length === 0) return;
-
-            container.innerHTML = `
-                <h2 class="section-header">建物一覧</h2>
-                <div class="info-card">
-                    ${buildings.map(b => `
-                        <p><strong>${b.name}</strong> - 定員${b.capacity}人
-                        ${b.nightSupport ? ' 🌙夜間支援' : ''}
-                        ${b.medicalCooperation ? ' 🏥医療連携' : ''}
-                        ${b.largeScale ? ' ⚠️大規模減算' : ''}
-                        </p>
-                    `).join('')}
-                </div>
-            `;
-        }
-
         // ========== OCR機能 ==========
 
-        const uploadArea = document.getElementById('uploadArea');
-        
-        uploadArea.addEventListener('click', () => {
-            document.getElementById('certificateFile').click();
-        });
-
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            
-            const file = e.dataTransfer.files[0];
-            if (file && (file.type.startsWith('image/') || file.type === 'application/pdf')) {
-                processFile(file);
-            } else {
-                alert('❌ PDFまたは画像ファイルを選択してください');
-            }
-        });
+        function initUploadArea() {
+            const uploadArea = document.getElementById('uploadArea');
+            if (!uploadArea || uploadArea._initialized) return;
+            uploadArea._initialized = true;
+            uploadArea.addEventListener('click', () => {
+                document.getElementById('certificateFile').click();
+            });
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file && (file.type.startsWith('image/') || file.type === 'application/pdf')) {
+                    processFile(file);
+                } else {
+                    alert('❌ PDFまたは画像ファイルを選択してください');
+                }
+            });
+        }
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
@@ -1497,64 +2202,811 @@
 
         // ========== 利用者管理 ==========
 
-        document.getElementById('userForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const user = {
-                id: Date.now().toString(),
-                certificateNumber: document.getElementById('certificateNumber').value,
-                name: document.getElementById('userName').value,
-                cityCode: document.getElementById('cityCode').value || '131148',
-                supportLevel: document.getElementById('supportLevel').value || '22',
-                validFrom: document.getElementById('validFrom').value,
-                validTo: document.getElementById('validTo').value,
-                unit: document.getElementById('userUnit').value,
-                issueDate: document.getElementById('issueDate').value,
-                userBurdenLimit: document.getElementById('userBurdenLimit').value || '0'
-            };
+        let currentUserId = null;
+        let userListPage = 1;
+        const USER_PAGE_SIZE = 15;
 
-            users.push(user);
-            localStorage.setItem('gh_users', JSON.stringify(users));
-            
+        function showUserList() {
+            document.getElementById('userListView').style.display = '';
+            document.getElementById('userDetailView').style.display = 'none';
             renderUserList();
-            updateUserSelector();
-            resetUserForm();
-            
-            alert('✅ 利用者を登録しました！');
-        });
+        }
 
-        function resetUserForm() {
-            document.getElementById('userForm').reset();
+        function showUserNew() {
+            currentUserId = null;
+            const newUser = {
+                id: Date.now().toString(),
+                name: '新しい利用者',
+                nameKana: '',
+                unit: '',
+                room: '',
+                moveDate: '',
+                gender: '',
+                birthdate: '',
+                zip: '', prefecture: '', city: '', address: '', buildingName: '',
+                tel: '', mobile: '',
+                daytimeOrgNo: '', daytimeOrgName: '',
+                housingAssist: '',
+                status: '利用中',
+                emergencyContacts: [],
+                medicalFacilities: [],
+                personality: '',
+                moveInHistory: [],
+                diseases: [],
+                medicines: [],
+                medicalNotes: '',
+                certificates: [],
+                calcSevereDisability: '',
+                calcRegionalTransition: false,
+                calcMentalTransition: false,
+                calcBehaviorTransition: false,
+                calcBehaviorExperience: false,
+                calcMedicalCare: false,
+                calcIndividualCare: false,
+                calcNoPlanReduction: '',
+                calcLargeScaleReduction: '',
+                contracts: [],
+                userHistory: { basic: {}, calc: {} }
+            };
+            users.push(newUser);
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            currentUserId = newUser.id;
+            showUserDetail(newUser.id);
+        }
+
+        function showUserDetail(userId) {
+            currentUserId = userId;
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            document.getElementById('userListView').style.display = 'none';
+            document.getElementById('userDetailView').style.display = '';
+            document.getElementById('userDetailName').textContent = user.name;
+            document.getElementById('userDetailBreadcrumb').textContent = `利用者照会 ${user.name}`;
+            loadUserForm(user);
+            showUserTab('basic1');
+            updateUnitOptions();
+        }
+
+        function showUserTab(tab) {
+            document.querySelectorAll('#userDetailTabs .building-inner-tab').forEach((el, i) => {
+                const tabs = ['basic1','basic2','medical','certificate','calc','contract','history'];
+                el.classList.toggle('active', tabs[i] === tab);
+            });
+            document.querySelectorAll('[id^="userTab-"]').forEach(el => el.classList.remove('active'));
+            const panel = document.getElementById('userTab-' + tab);
+            if (panel) panel.classList.add('active');
+            if (tab === 'certificate') renderCertificateHistory();
+            if (tab === 'basic2') renderBasic2();
+            if (tab === 'medical') renderMedical();
+            if (tab === 'contract') renderContractList();
+            if (tab === 'history') renderUserHistory();
+        }
+
+        function loadUserForm(user) {
+            // 基本情報①
+            document.getElementById('userUnit').value = user.unit || '';
+            document.getElementById('userRoom').value = user.room || '';
+            document.getElementById('userMoveDate').value = user.moveDate || '';
+            document.getElementById('userName').value = user.name || '';
+            document.getElementById('userNameKana').value = user.nameKana || '';
+            document.getElementById('userGender').value = user.gender || '';
+            document.getElementById('userBirthdate').value = user.birthdate || '';
+            document.getElementById('userZip').value = user.zip || '';
+            document.getElementById('userPrefecture').value = user.prefecture || '';
+            document.getElementById('userCity').value = user.city || '';
+            document.getElementById('userAddress').value = user.address || '';
+            document.getElementById('userBuildingName').value = user.buildingName || '';
+            document.getElementById('userTel').value = user.tel || '';
+            document.getElementById('userMobile').value = user.mobile || '';
+            document.getElementById('userDaytimeOrgNo').value = user.daytimeOrgNo || '';
+            document.getElementById('userDaytimeOrgName').value = user.daytimeOrgName || '';
+            document.getElementById('userHousingAssist').value = user.housingAssist || '';
+            document.getElementById('userStatus').value = user.status || '利用中';
+            // 算定情報
+            document.getElementById('calcSevereDisability').value = user.calcSevereDisability || '';
+            document.getElementById('calcRegionalTransition').checked = !!user.calcRegionalTransition;
+            document.getElementById('calcMentalTransition').checked = !!user.calcMentalTransition;
+            document.getElementById('calcBehaviorTransition').checked = !!user.calcBehaviorTransition;
+            document.getElementById('calcBehaviorExperience').checked = !!user.calcBehaviorExperience;
+            document.getElementById('calcMedicalCare').checked = !!user.calcMedicalCare;
+            document.getElementById('calcIndividualCare').checked = !!user.calcIndividualCare;
+            document.getElementById('calcNoPlanReduction').value = user.calcNoPlanReduction || '';
+            document.getElementById('calcLargeScaleReduction').value = user.calcLargeScaleReduction || '';
+            // 契約
+            document.getElementById('contractFacilityLabel').textContent = facility.facilityName || 'Tokyo. settle';
+        }
+
+        function saveCurrentUser(type) {
+            const user = users.find(u => u.id === currentUserId);
+            if (!user) return;
+            const now = new Date();
+            const histKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+            if (type === 'basic1') {
+                const prevSnap = JSON.parse(JSON.stringify(user));
+                user.unit = document.getElementById('userUnit').value;
+                user.room = document.getElementById('userRoom').value;
+                user.moveDate = document.getElementById('userMoveDate').value;
+                user.name = document.getElementById('userName').value;
+                user.nameKana = document.getElementById('userNameKana').value;
+                user.gender = document.getElementById('userGender').value;
+                user.birthdate = document.getElementById('userBirthdate').value;
+                user.zip = document.getElementById('userZip').value;
+                user.prefecture = document.getElementById('userPrefecture').value;
+                user.city = document.getElementById('userCity').value;
+                user.address = document.getElementById('userAddress').value;
+                user.buildingName = document.getElementById('userBuildingName').value;
+                user.tel = document.getElementById('userTel').value;
+                user.mobile = document.getElementById('userMobile').value;
+                user.daytimeOrgNo = document.getElementById('userDaytimeOrgNo').value;
+                user.daytimeOrgName = document.getElementById('userDaytimeOrgName').value;
+                user.housingAssist = document.getElementById('userHousingAssist').value;
+                user.status = document.getElementById('userStatus').value;
+                if (!user.userHistory) user.userHistory = {basic:{}, calc:{}};
+                user.userHistory.basic[histKey] = { ...prevSnap, savedAt: now.toISOString() };
+                document.getElementById('userDetailName').textContent = user.name;
+            } else if (type === 'calc') {
+                const prevSnap = { calcSevereDisability: user.calcSevereDisability, calcRegionalTransition: user.calcRegionalTransition, calcMentalTransition: user.calcMentalTransition, calcBehaviorTransition: user.calcBehaviorTransition, calcBehaviorExperience: user.calcBehaviorExperience, calcMedicalCare: user.calcMedicalCare, calcIndividualCare: user.calcIndividualCare, calcNoPlanReduction: user.calcNoPlanReduction, calcLargeScaleReduction: user.calcLargeScaleReduction };
+                user.calcSevereDisability = document.getElementById('calcSevereDisability').value;
+                user.calcRegionalTransition = document.getElementById('calcRegionalTransition').checked;
+                user.calcMentalTransition = document.getElementById('calcMentalTransition').checked;
+                user.calcBehaviorTransition = document.getElementById('calcBehaviorTransition').checked;
+                user.calcBehaviorExperience = document.getElementById('calcBehaviorExperience').checked;
+                user.calcMedicalCare = document.getElementById('calcMedicalCare').checked;
+                user.calcIndividualCare = document.getElementById('calcIndividualCare').checked;
+                user.calcNoPlanReduction = document.getElementById('calcNoPlanReduction').value;
+                user.calcLargeScaleReduction = document.getElementById('calcLargeScaleReduction').value;
+                if (!user.userHistory) user.userHistory = {basic:{}, calc:{}};
+                user.userHistory.calc[histKey] = { ...prevSnap, savedAt: now.toISOString() };
+            }
+
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            updateUserSelector();
+            alert('✅ 保存しました！');
         }
 
         function renderUserList() {
-            const list = document.getElementById('userList');
-            if (users.length === 0) {
-                list.innerHTML = '<p style="text-align: center; color: #999; padding: 40px;">登録された利用者はいません</p>';
-                return;
+            const filterName = (document.getElementById('filterName')?.value || '').trim();
+            const filterBuilding = document.getElementById('filterBuilding')?.value || '';
+
+            // update building filter options
+            const bSel = document.getElementById('filterBuilding');
+            if (bSel) {
+                const curr = bSel.value;
+                bSel.innerHTML = '<option value="">選択してください</option>' +
+                    buildings.map(b => `<option value="${b.id}" ${b.id===curr?'selected':''}>${b.name}</option>`).join('');
             }
 
-            list.innerHTML = users.map(user => `
-                <div class="user-card">
-                    <h3>${user.name}</h3>
-                    <p>📋 受給者証番号: ${user.certificateNumber}</p>
-                    <p>🏠 ユニット: ${getUnitName(user.unit)}</p>
-                    <p>📊 区分: ${getSupportLevelName(user.supportLevel)}</p>
-                    <p>📅 有効期間: ${user.validFrom || '未設定'} ～ ${user.validTo || '未設定'}</p>
-                </div>
+            let filtered = users.filter(u => {
+                if (filterName && !u.name.includes(filterName)) return false;
+                if (filterBuilding && u.unit !== filterBuilding) return false;
+                return true;
+            });
+
+            const total = filtered.length;
+            const totalPages = Math.max(1, Math.ceil(total / USER_PAGE_SIZE));
+            if (userListPage > totalPages) userListPage = 1;
+            const start = (userListPage - 1) * USER_PAGE_SIZE;
+            const pageUsers = filtered.slice(start, start + USER_PAGE_SIZE);
+
+            document.getElementById('userListCount').textContent =
+                `${total} 件中 ${start+1} - ${Math.min(start+USER_PAGE_SIZE, total)} 件の 利用者 を表示`;
+
+            // Pager
+            let pagerHtml = '';
+            if (totalPages > 1) {
+                pagerHtml = `<div style="display:flex; gap:4px; align-items:center;">`;
+                for (let i = 1; i <= totalPages; i++) {
+                    if (i === userListPage) {
+                        pagerHtml += `<span style="padding:4px 10px; background:#e91e8c; color:white; border-radius:4px;">${i}</span>`;
+                    } else {
+                        pagerHtml += `<span style="padding:4px 10px; border:1px solid #ddd; border-radius:4px; cursor:pointer; color:#667eea;" onclick="userListPage=${i};renderUserList();">${i}</span>`;
+                    }
+                }
+                if (userListPage < totalPages) {
+                    pagerHtml += `<span style="padding:4px 10px; border:1px solid #ddd; border-radius:4px; cursor:pointer; color:#667eea;" onclick="userListPage=${userListPage+1};renderUserList();">次 ›</span>`;
+                    pagerHtml += `<span style="padding:4px 10px; border:1px solid #ddd; border-radius:4px; cursor:pointer; color:#667eea;" onclick="userListPage=${totalPages};renderUserList();">最後 »</span>`;
+                }
+                pagerHtml += `</div>`;
+            }
+            document.getElementById('userPager').innerHTML = pagerHtml;
+
+            const tbody = document.getElementById('userListBody');
+            if (pageUsers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#aaa;">利用者がいません</td></tr>';
+                return;
+            }
+            tbody.innerHTML = pageUsers.map(u => {
+                // 受給者証期限チェック
+                const today = new Date();
+                const todayStr = today.toISOString().slice(0,10);
+                const soon = new Date(today); soon.setDate(soon.getDate() + 90);
+                const soonStr = soon.toISOString().slice(0,10);
+                let certWarning = '';
+                if (u.certificates && u.certificates.length > 0) {
+                    const latest = u.certificates.reduce((a,b) => (a.certValidTo||'') > (b.certValidTo||'') ? a : b);
+                    if (latest.certValidTo) {
+                        if (latest.certValidTo < todayStr) certWarning = '<span title="受給者証期限切れ" style="font-size:1em;">🔴</span>';
+                        else if (latest.certValidTo < soonStr) certWarning = '<span title="受給者証期限近い" style="font-size:1em;">🟡</span>';
+                    }
+                }
+                return '<tr style="border-bottom:1px solid #f0f0f0;">' +
+                    '<td style="padding:10px 6px; text-align:center;">' +
+                        certWarning +
+                        '<span style="display:inline-block; background:#e0e8ff; color:#667eea; border-radius:4px; padding:2px 6px; font-size:0.8em;">介</span>' +
+                    '</td>' +
+                    '<td style="padding:10px 6px; color:#555;">' + (facility.facilityName || 'Tokyo. settle') + '</td>' +
+                    '<td style="padding:10px 6px; color:#667eea; cursor:pointer;" onclick="showUserDetail(\'' + u.id + '\')">' + getUnitName(u.unit) + '</td>' +
+                    '<td style="padding:10px 6px;">' + u.name + '</td>' +
+                    '<td style="padding:10px 6px; text-align:right;">' +
+                        '<button class="btn btn-primary" onclick="showUserDetail(\'' + u.id + '\')" style="background:#e91e8c; border-color:#e91e8c; padding:4px 10px; font-size:0.8em; margin-right:4px;">詳細</button>' +
+                        '<button class="btn btn-secondary" onclick="deleteUser(\'' + u.id + '\')" style="padding:4px 10px; font-size:0.8em;">削除</button>' +
+                    '</td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        function deleteUser(id) {
+            if (confirm('この利用者を削除しますか？')) {
+                users = users.filter(u => u.id !== id);
+                localStorage.setItem('gh_users', JSON.stringify(users));
+                renderUserList();
+                updateUserSelector();
+            }
+        }
+
+        // ===== 受給者証 =====
+        let editingCertIndex = null;
+
+        function showCertificateForm(index) {
+            editingCertIndex = index !== undefined ? index : null;
+            const user = users.find(u => u.id === currentUserId);
+            const form = document.getElementById('certificateForm');
+            form.style.display = '';
+
+            // reset
+            ['certNo','certCityCode','certCityName','certDisabilityType','certSupportLevel','certIssueDate','certValidFrom','certValidTo','certBurdenLimit','certLimitFrom','certLimitTo','certUpperMgmtOrgNo','certUpperMgmtOrgName','certSpecialAmount','certSpecialFrom','certSpecialTo','certMuniOrgNo','certMuniRate','certMuniAmount','certMuniMax','certMuniGrant','certGrantFrom','certGrantTo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            ['certUpperMgmt','certSpecialDisabled','certMunicipalityAssist'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.checked = false;
+            });
+            document.getElementById('certSpecialDisabledArea').style.display = 'none';
+            document.getElementById('certMunicipalityArea').style.display = 'none';
+
+            if (editingCertIndex !== null && user && user.certificates && user.certificates[editingCertIndex]) {
+                const cert = user.certificates[editingCertIndex];
+                document.getElementById('certNo').value = cert.certNo || '';
+                document.getElementById('certCityCode').value = cert.certCityCode || '';
+                document.getElementById('certCityName').value = cert.certCityName || '';
+                document.getElementById('certDisabilityType').value = cert.certDisabilityType || '';
+                document.getElementById('certSupportLevel').value = cert.certSupportLevel || '';
+                document.getElementById('certIssueDate').value = cert.certIssueDate || '';
+                document.getElementById('certValidFrom').value = cert.certValidFrom || '';
+                document.getElementById('certValidTo').value = cert.certValidTo || '';
+                document.getElementById('certBurdenLimit').value = cert.certBurdenLimit || '0';
+                document.getElementById('certLimitFrom').value = cert.certLimitFrom || '';
+                document.getElementById('certLimitTo').value = cert.certLimitTo || '';
+                document.getElementById('certUpperMgmt').checked = !!cert.certUpperMgmt;
+                document.getElementById('certUpperMgmtOrgNo').value = cert.certUpperMgmtOrgNo || '';
+                document.getElementById('certUpperMgmtOrgName').value = cert.certUpperMgmtOrgName || '';
+                document.getElementById('certSpecialDisabled').checked = !!cert.certSpecialDisabled;
+                if (cert.certSpecialDisabled) {
+                    document.getElementById('certSpecialDisabledArea').style.display = '';
+                    document.getElementById('certSpecialAmount').value = cert.certSpecialAmount || '0';
+                    document.getElementById('certSpecialFrom').value = cert.certSpecialFrom || '';
+                    document.getElementById('certSpecialTo').value = cert.certSpecialTo || '';
+                }
+                document.getElementById('certMunicipalityAssist').checked = !!cert.certMunicipalityAssist;
+                if (cert.certMunicipalityAssist) {
+                    document.getElementById('certMunicipalityArea').style.display = '';
+                    document.getElementById('certMuniOrgNo').value = cert.certMuniOrgNo || '';
+                    document.getElementById('certMuniRate').value = cert.certMuniRate || '';
+                    document.getElementById('certMuniAmount').value = cert.certMuniAmount || '';
+                    document.getElementById('certMuniMax').value = cert.certMuniMax || '';
+                    document.getElementById('certMuniGrant').value = cert.certMuniGrant || '';
+                    document.getElementById('certGrantFrom').value = cert.certGrantFrom || '';
+                    document.getElementById('certGrantTo').value = cert.certGrantTo || '';
+                }
+            }
+            // toggle listeners
+            document.getElementById('certSpecialDisabled').onchange = function() {
+                document.getElementById('certSpecialDisabledArea').style.display = this.checked ? '' : 'none';
+            };
+            document.getElementById('certMunicipalityAssist').onchange = function() {
+                document.getElementById('certMunicipalityArea').style.display = this.checked ? '' : 'none';
+            };
+        }
+
+        function cancelCertificateForm() {
+            document.getElementById('certificateForm').style.display = 'none';
+            editingCertIndex = null;
+        }
+
+        function saveCertificate() {
+            const user = users.find(u => u.id === currentUserId);
+            if (!user) return;
+            if (!user.certificates) user.certificates = [];
+
+            const cert = {
+                certNo: document.getElementById('certNo').value,
+                certCityCode: document.getElementById('certCityCode').value,
+                certCityName: document.getElementById('certCityName').value,
+                certDisabilityType: document.getElementById('certDisabilityType').value,
+                certSupportLevel: document.getElementById('certSupportLevel').value,
+                certIssueDate: document.getElementById('certIssueDate').value,
+                certValidFrom: document.getElementById('certValidFrom').value,
+                certValidTo: document.getElementById('certValidTo').value,
+                certBurdenLimit: document.getElementById('certBurdenLimit').value,
+                certLimitFrom: document.getElementById('certLimitFrom').value,
+                certLimitTo: document.getElementById('certLimitTo').value,
+                certUpperMgmt: document.getElementById('certUpperMgmt').checked,
+                certUpperMgmtOrgNo: document.getElementById('certUpperMgmtOrgNo').value,
+                certUpperMgmtOrgName: document.getElementById('certUpperMgmtOrgName').value,
+                certSpecialDisabled: document.getElementById('certSpecialDisabled').checked,
+                certSpecialAmount: document.getElementById('certSpecialAmount').value,
+                certSpecialFrom: document.getElementById('certSpecialFrom').value,
+                certSpecialTo: document.getElementById('certSpecialTo').value,
+                certMunicipalityAssist: document.getElementById('certMunicipalityAssist').checked,
+                certMuniOrgNo: document.getElementById('certMuniOrgNo').value,
+                certMuniRate: document.getElementById('certMuniRate').value,
+                certMuniAmount: document.getElementById('certMuniAmount').value,
+                certMuniMax: document.getElementById('certMuniMax').value,
+                certMuniGrant: document.getElementById('certMuniGrant').value,
+                certGrantFrom: document.getElementById('certGrantFrom').value,
+                certGrantTo: document.getElementById('certGrantTo').value,
+                savedAt: new Date().toISOString()
+            };
+
+            if (editingCertIndex !== null) {
+                user.certificates[editingCertIndex] = cert;
+            } else {
+                user.certificates.push(cert);
+            }
+
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            cancelCertificateForm();
+            renderCertificateHistory();
+            alert('✅ 受給者証を保存しました！');
+        }
+
+        function deleteCertificate(index) {
+            if (!confirm('この受給者証履歴を削除しますか？')) return;
+            const user = users.find(u => u.id === currentUserId);
+            if (!user || !user.certificates) return;
+            user.certificates.splice(index, 1);
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderCertificateHistory();
+        }
+
+        function renderCertificateHistory() {
+            const user = users.find(u => u.id === currentUserId);
+            const tbody = document.getElementById('certificateHistoryList');
+            if (!tbody) return;
+            const certs = user && user.certificates ? user.certificates : [];
+            if (certs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; color:#aaa; text-align:center;">受給者証が登録されていません</td></tr>';
+                return;
+            }
+            // Sort by validFrom descending
+            const sorted = certs.map((c,i) => ({...c, _i: i})).sort((a,b) => (b.certValidFrom||'').localeCompare(a.certValidFrom||''));
+            const today = new Date().toISOString().slice(0,10);
+            const soon = new Date(); soon.setDate(soon.getDate() + 90);
+            const soonStr = soon.toISOString().slice(0,10);
+            tbody.innerHTML = sorted.map(cert => {
+                let rowStyle = 'border-bottom:1px solid #f0f0f0;';
+                let expiryBadge = '';
+                if (cert.certValidTo) {
+                    if (cert.certValidTo < today) {
+                        rowStyle += ' background:#fff0f0;';
+                        expiryBadge = '<span style="color:red; font-size:0.8em; margin-left:4px;">期限切れ</span>';
+                    } else if (cert.certValidTo < soonStr) {
+                        rowStyle += ' background:#fffbe6;';
+                        expiryBadge = '<span style="color:#e65; font-size:0.8em; margin-left:4px;">期限近い</span>';
+                    }
+                }
+                return `
+                <tr style="${rowStyle}">
+                    <td style="padding:10px 8px;">${cert.certValidFrom||''}〜${cert.certValidTo||''}${expiryBadge}</td>
+                    <td style="padding:10px 8px;">${cert.certIssueDate||''}</td>
+                    <td style="padding:10px 8px;">${cert.certNo||''}</td>
+                    <td style="padding:10px 8px;">${cert.certSupportLevel||''}</td>
+                    <td style="padding:10px 8px; text-align:right;">
+                        <button class="btn btn-primary" onclick="showCertificateForm(${cert._i})" style="background:#e91e8c; border-color:#e91e8c; padding:3px 8px; font-size:0.8em; margin-right:3px;">詳細</button>
+                        <button class="btn btn-secondary" onclick="deleteCertificate(${cert._i})" style="padding:3px 8px; font-size:0.8em; margin-right:3px;">削除</button>
+                        <button class="btn btn-secondary" onclick="copyCertificate(${cert._i})" style="padding:3px 8px; font-size:0.8em;">ｺﾋﾟｰ</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function copyCertificate(index) {
+            const user = users.find(u => u.id === currentUserId);
+            if (!user || !user.certificates || !user.certificates[index]) return;
+            const copy = JSON.parse(JSON.stringify(user.certificates[index]));
+            copy.certValidFrom = '';
+            copy.certValidTo = '';
+            copy.certIssueDate = '';
+            copy.savedAt = '';
+            user.certificates.push(copy);
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            showCertificateForm(user.certificates.length - 1);
+            renderCertificateHistory();
+        }
+
+        // ===== 基本情報② =====
+        function renderBasic2() {
+            const user = users.find(u => u.id === currentUserId);
+            if (!user) return;
+            // 緊急連絡先
+            const ecList = document.getElementById('emergencyContactList');
+            if (ecList) {
+                const ecs = user.emergencyContacts || [];
+                ecList.innerHTML = ecs.length === 0 ? '<p style="color:#aaa; font-size:0.9em;">登録がありません</p>' :
+                    ecs.map((ec, i) => `
+                        <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:start;">
+                            <div style="font-size:0.9em;">
+                                <p>氏名: ${ec.name||''}&nbsp;&nbsp;&nbsp;続柄: ${ec.relationship||''}</p>
+                                <p>電話: ${ec.tel||''}</p>
+                                ${ec.address?`<p>住所: ${ec.address}</p>`:''}
+                                ${ec.note?`<p>備考: ${ec.note}</p>`:''}
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-primary" onclick="editEmergencyContact(${i})" style="background:#e91e8c; border-color:#e91e8c; padding:3px 8px; font-size:0.8em;">編集</button>
+                                <button class="btn btn-secondary" onclick="deleteEmergencyContact(${i})" style="padding:3px 8px; font-size:0.8em;">削除</button>
+                            </div>
+                        </div>`).join('');
+            }
+            // かかりつけ医療機関
+            const mfList = document.getElementById('medicalFacilityList');
+            if (mfList) {
+                const mfs = user.medicalFacilities || [];
+                mfList.innerHTML = mfs.length === 0 ? '<p style="color:#aaa; font-size:0.9em;">登録がありません</p>' :
+                    mfs.map((mf, i) => `
+                        <div style="padding:12px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:start;">
+                            <div style="font-size:0.9em;">
+                                <p>医療機関名: ${mf.name||''}&nbsp;&nbsp;&nbsp;主治医: ${mf.doctor||''}</p>
+                                <p>電話番号: ${mf.tel||''}</p>
+                                ${mf.address?`<p>住所: ${mf.address}</p>`:''}
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <button class="btn btn-primary" onclick="editMedicalFacility(${i})" style="background:#e91e8c; border-color:#e91e8c; padding:3px 8px; font-size:0.8em;">編集</button>
+                                <button class="btn btn-secondary" onclick="deleteMedicalFacility(${i})" style="padding:3px 8px; font-size:0.8em;">削除</button>
+                            </div>
+                        </div>`).join('');
+            }
+            // 性格・趣味
+            const pi = document.getElementById('personalityInfo');
+            if (pi) pi.textContent = user.personality || '';
+        }
+
+        function addEmergencyContact() {
+            const name = prompt('氏名:');
+            if (name === null) return;
+            const rel = prompt('続柄:') || '';
+            const tel = prompt('電話:') || '';
+            const user = users.find(u => u.id === currentUserId);
+            if (!user.emergencyContacts) user.emergencyContacts = [];
+            user.emergencyContacts.push({ name, relationship: rel, tel });
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderBasic2();
+        }
+        function editEmergencyContact(i) {
+            const user = users.find(u => u.id === currentUserId);
+            const ec = user.emergencyContacts[i];
+            ec.name = prompt('氏名:', ec.name) || ec.name;
+            ec.relationship = prompt('続柄:', ec.relationship) || ec.relationship;
+            ec.tel = prompt('電話:', ec.tel) || ec.tel;
+            ec.address = prompt('住所:', ec.address||'') || ec.address || '';
+            ec.note = prompt('備考:', ec.note||'') || ec.note || '';
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderBasic2();
+        }
+        function deleteEmergencyContact(i) {
+            if (!confirm('削除しますか？')) return;
+            const user = users.find(u => u.id === currentUserId);
+            user.emergencyContacts.splice(i, 1);
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderBasic2();
+        }
+        function addMedicalFacility() {
+            const name = prompt('医療機関名:');
+            if (name === null) return;
+            const doctor = prompt('主治医:') || '';
+            const tel = prompt('電話番号:') || '';
+            const address = prompt('住所:') || '';
+            const user = users.find(u => u.id === currentUserId);
+            if (!user.medicalFacilities) user.medicalFacilities = [];
+            user.medicalFacilities.push({ name, doctor, tel, address });
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderBasic2();
+        }
+        function editMedicalFacility(i) {
+            const user = users.find(u => u.id === currentUserId);
+            const mf = user.medicalFacilities[i];
+            mf.name = prompt('医療機関名:', mf.name) || mf.name;
+            mf.doctor = prompt('主治医:', mf.doctor) || mf.doctor;
+            mf.tel = prompt('電話番号:', mf.tel) || mf.tel;
+            mf.address = prompt('住所:', mf.address||'') || mf.address || '';
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderBasic2();
+        }
+        function deleteMedicalFacility(i) {
+            if (!confirm('削除しますか？')) return;
+            const user = users.find(u => u.id === currentUserId);
+            user.medicalFacilities.splice(i, 1);
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderBasic2();
+        }
+        function editPersonality() {
+            const user = users.find(u => u.id === currentUserId);
+            const val = prompt('性格・趣味など:', user.personality||'');
+            if (val === null) return;
+            user.personality = val;
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderBasic2();
+        }
+        function addMoveInHistory() {
+            const val = prompt('入居前の状況・成育歴:');
+            if (val === null) return;
+            const user = users.find(u => u.id === currentUserId);
+            if (!user.moveInHistory) user.moveInHistory = [];
+            user.moveInHistory.push({ content: val, date: new Date().toISOString() });
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderBasic2();
+        }
+
+        // ===== 既往歴・服薬 =====
+        function renderMedical() {
+            const user = users.find(u => u.id === currentUserId);
+            if (!user) return;
+            const dl = document.getElementById('diseaseList');
+            if (dl) {
+                const diseases = user.diseases || [];
+                dl.innerHTML = diseases.length === 0
+                    ? '<tr><td colspan="5" style="padding:10px; color:#aaa; font-size:0.9em;">登録がありません</td></tr>'
+                    : diseases.map((d, i) => `
+                        <tr style="border-bottom:1px solid #f0f0f0;">
+                            <td style="padding:8px;">${d.name||''}</td>
+                            <td style="padding:8px;">${d.onsetDate||''}</td>
+                            <td style="padding:8px;">${d.hospital||''}</td>
+                            <td style="padding:8px;">${d.note||''}</td>
+                            <td style="padding:8px; text-align:right; display:flex; gap:4px;">
+                                <button class="btn btn-primary" onclick="editDisease(${i})" style="background:#e91e8c; border-color:#e91e8c; padding:3px 8px; font-size:0.8em;">編集</button>
+                                <button class="btn btn-secondary" onclick="deleteDisease(${i})" style="padding:3px 8px; font-size:0.8em;">削除</button>
+                            </td>
+                        </tr>`).join('');
+            }
+            const mn = document.getElementById('medicalNotes');
+            if (mn) mn.textContent = user.medicalNotes || '';
+        }
+        function addDisease() {
+            const name = prompt('病名:');
+            if (name === null) return;
+            const onsetDate = prompt('発症年月日 (例: 2020/01/01):') || '';
+            const hospital = prompt('医療機関名:') || '';
+            const note = prompt('備考:') || '';
+            const user = users.find(u => u.id === currentUserId);
+            if (!user.diseases) user.diseases = [];
+            user.diseases.push({ name, onsetDate, hospital, note });
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderMedical();
+        }
+        function editDisease(i) {
+            const user = users.find(u => u.id === currentUserId);
+            const d = user.diseases[i];
+            d.name = prompt('病名:', d.name) || d.name;
+            d.onsetDate = prompt('発症年月日:', d.onsetDate||'') || d.onsetDate || '';
+            d.hospital = prompt('医療機関名:', d.hospital||'') || d.hospital || '';
+            d.note = prompt('備考:', d.note||'') || d.note || '';
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderMedical();
+        }
+        function deleteDisease(i) {
+            if (!confirm('削除しますか？')) return;
+            const user = users.find(u => u.id === currentUserId);
+            user.diseases.splice(i, 1);
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderMedical();
+        }
+        function addMedicine() {
+            const name = prompt('薬品名:');
+            if (name === null) return;
+            const dose = prompt('用量:') || '';
+            const user = users.find(u => u.id === currentUserId);
+            if (!user.medicines) user.medicines = [];
+            user.medicines.push({ name, dose });
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            const ml = document.getElementById('medicineList');
+            if (ml) ml.innerHTML = (user.medicines||[]).map((m,i)=>`<div style="padding:8px; border-bottom:1px solid #eee;">${m.name} ${m.dose}</div>`).join('');
+        }
+        function editMedicalNotes() {
+            const user = users.find(u => u.id === currentUserId);
+            const val = prompt('留意点／特記事項:', user.medicalNotes||'');
+            if (val === null) return;
+            user.medicalNotes = val;
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderMedical();
+        }
+
+        // ===== 契約情報 =====
+        function addContract() {
+            const svcStart = prompt('サービス開始日 (例: 2023/11/01):');
+            if (svcStart === null) return;
+            const contractStart = prompt('契約開始日:') || svcStart;
+            const user = users.find(u => u.id === currentUserId);
+            if (!user.contracts) user.contracts = [];
+            user.contracts.push({
+                svcStart, trialStart:'', trialEnd:'',
+                contractStart, contractEnd:'', svcEnd:'',
+                selfSupportLeave:'', selfSupportAfter:'',
+                transitionMoveIn:'',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderContractList();
+        }
+
+        function renderContractList() {
+            const user = users.find(u => u.id === currentUserId);
+            const tbody = document.getElementById('contractList');
+            if (!tbody) return;
+            const contracts = user && user.contracts ? user.contracts : [];
+            if (contracts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; color:#aaa; text-align:center;">契約情報がありません</td></tr>';
+                return;
+            }
+            tbody.innerHTML = contracts.map((c, i) => `
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                    <td style="padding:10px 8px;">${c.svcStart||''}</td>
+                    <td style="padding:10px 8px;">${c.trialStart||''}</td>
+                    <td style="padding:10px 8px;">${c.contractStart||''}</td>
+                    <td style="padding:10px 8px; font-size:0.85em;">${c.updatedAt ? new Date(c.updatedAt).toLocaleString('ja-JP') : ''}</td>
+                    <td style="padding:10px 8px; text-align:right;">
+                        <button class="btn btn-primary" onclick="showContractDetail(${i})" style="background:#e91e8c; border-color:#e91e8c; padding:3px 8px; font-size:0.8em; margin-right:3px;">詳細</button>
+                        <button class="btn btn-secondary" onclick="deleteContract(${i})" style="padding:3px 8px; font-size:0.8em; margin-right:3px;">削除</button>
+                        <select style="padding:3px; font-size:0.8em; border:1px solid #ddd; border-radius:4px;" onchange="this.value=''">
+                            <option value="">新規 ∨</option>
+                            <option value="new">新規</option>
+                            <option value="end">終了</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="alert('報告書機能は準備中です')" style="background:#e91e8c; border-color:#e91e8c; color:white; padding:3px 8px; font-size:0.8em;">報告書</button>
+                    </td>
+                </tr>
             `).join('');
         }
 
+        function showContractDetail(i) {
+            const user = users.find(u => u.id === currentUserId);
+            const c = user.contracts[i];
+            const div = document.getElementById('contractDetail');
+            div.style.display = '';
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:start;">
+                    <div style="font-size:0.9em; line-height:2;">
+                        <p>サービス開始日（体験及び本入居開始日）：${c.svcStart||''}</p>
+                        <p>体験開始日：${c.trialStart||''}</p>
+                        <p>体験終了日：${c.trialEnd||''}</p>
+                        <p>契約開始日：${c.contractStart||''}</p>
+                        <p>契約終了日：${c.contractEnd||''}</p>
+                        <p>サービス終了日：${c.svcEnd||''}</p>
+                        <p>（自立生活支援）退去日：${c.selfSupportLeave||''}</p>
+                        <p>（自立生活支援）退去後算定日：${c.selfSupportAfter||''}</p>
+                        <p>移行支援住居の入居日：${c.transitionMoveIn||''}</p>
+                        <p>更新日時：${c.updatedAt ? new Date(c.updatedAt).toLocaleString('ja-JP') : ''}</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="editContract(${i})" style="background:#e91e8c; border-color:#e91e8c; padding:4px 10px; font-size:0.85em;">編集</button>
+                </div>
+            `;
+        }
+
+        function editContract(i) {
+            const user = users.find(u => u.id === currentUserId);
+            const c = user.contracts[i];
+            c.svcStart = prompt('サービス開始日:', c.svcStart||'') || c.svcStart || '';
+            c.trialStart = prompt('体験開始日:', c.trialStart||'') || c.trialStart || '';
+            c.contractStart = prompt('契約開始日:', c.contractStart||'') || c.contractStart || '';
+            c.contractEnd = prompt('契約終了日:', c.contractEnd||'') || c.contractEnd || '';
+            c.svcEnd = prompt('サービス終了日:', c.svcEnd||'') || c.svcEnd || '';
+            c.updatedAt = new Date().toISOString();
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderContractList();
+            showContractDetail(i);
+        }
+
+        function deleteContract(i) {
+            if (!confirm('削除しますか？')) return;
+            const user = users.find(u => u.id === currentUserId);
+            user.contracts.splice(i, 1);
+            localStorage.setItem('gh_users', JSON.stringify(users));
+            renderContractList();
+            document.getElementById('contractDetail').style.display = 'none';
+        }
+
+        // ===== 利用者履歴情報 =====
+        function renderUserHistory() {
+            const user = users.find(u => u.id === currentUserId);
+            const div = document.getElementById('userHistoryContent');
+            if (!div || !user) return;
+            const hist = user.userHistory || {basic:{}, calc:{}};
+            const allKeys = new Set([...Object.keys(hist.basic||{}), ...Object.keys(hist.calc||{})]);
+            if (allKeys.size === 0) {
+                div.innerHTML = '<p style="color:#aaa;">変更履歴はまだありません</p>';
+                return;
+            }
+            // 年ごとにグループ化
+            const byYear = {};
+            allKeys.forEach(k => {
+                const [y] = k.split('-');
+                if (!byYear[y]) byYear[y] = new Set();
+                byYear[y].add(k);
+            });
+            const years = Object.keys(byYear).sort((a,b)=>b-a);
+            const rows = ['basic','calc'];
+            const rowLabels = {basic:'基本情報', calc:'算定情報'};
+
+            let html = '';
+            // 最新年（現在年）は先頭に分けて表示
+            const latestYear = years[0];
+            rows.forEach(row => {
+                const months = [...byYear[latestYear]].filter(k => hist[row] && hist[row][k]).sort();
+                if (months.length > 0) {
+                    html += `<div style="display:flex; gap:10px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+                        <span style="width:70px; font-size:0.85em; color:#555; flex-shrink:0;">${rowLabels[row]}</span>
+                        ${months.map(k => {
+                            const [y, m] = k.split('-');
+                            return `<span class="history-link" onclick="viewUserHistory('${row}','${k}')">${y}年${parseInt(m)}月</span>`;
+                        }).join('')}
+                    </div>`;
+                }
+            });
+
+            // 残り年
+            years.slice(1).forEach(year => {
+                html += '<hr style="margin:12px 0; border:none; border-top:1px solid #eee;">';
+                rows.forEach(row => {
+                    const months = [...byYear[year]].filter(k => hist[row] && hist[row][k]).sort();
+                    if (months.length > 0) {
+                        html += `<div style="display:flex; gap:10px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+                            <span style="width:70px; font-size:0.85em; color:#555; flex-shrink:0;">${rowLabels[row]}</span>
+                            ${months.map(k => {
+                                const [y, m] = k.split('-');
+                                return `<span class="history-link" onclick="viewUserHistory('${row}','${k}')">${y}年${parseInt(m)}月</span>`;
+                            }).join('')}
+                        </div>`;
+                    }
+                });
+            });
+
+            div.innerHTML = html;
+        }
+
+        function viewUserHistory(type, key) {
+            const user = users.find(u => u.id === currentUserId);
+            if (!user || !user.userHistory || !user.userHistory[type] || !user.userHistory[type][key]) return;
+            const data = user.userHistory[type][key];
+            const [y, m] = key.split('-');
+            let msg = `【${user.name} - ${type==='basic'?'基本情報':'算定情報'} ${y}年${parseInt(m)}月】\n`;
+            msg += `保存日時: ${data.savedAt ? new Date(data.savedAt).toLocaleString('ja-JP') : '不明'}\n\n`;
+            const labels = {name:'氏名', unit:'ユニット', room:'部屋', status:'ステータス', gender:'性別', birthdate:'生年月日', mobile:'携帯'};
+            Object.entries(labels).forEach(([k,l]) => {
+                if (data[k]) msg += `${l}: ${data[k]}\n`;
+            });
+            alert(msg);
+        }
+
+        function resetUserForm() {}
+
         function getUnitName(unitId) {
             const building = buildings.find(b => b.id === unitId);
-            return building ? building.name : unitId;
+            return building ? building.name : (unitId || '未設定');
         }
 
         function getSupportLevelName(level) {
-            const levels = {
-                '21': '区分1', '22': '区分2', '23': '区分3',
-                '24': '区分4', '25': '区分5', '26': '区分6'
-            };
+            const levels = { '21':'区分1','22':'区分2','23':'区分3','24':'区分4','25':'区分5','26':'区分6' };
             return levels[level] || 'なし';
         }
 
