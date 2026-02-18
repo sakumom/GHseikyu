@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>グループホーム請求管理システム v2</title>
-    <!-- Tesseract.js: Coreバージョン（Workerなし） -->
+    <title>グループホーム請求管理システム v3</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
     <style>
         * {
@@ -50,15 +49,15 @@
 
         .tab {
             flex: 1;
-            min-width: 150px;
-            padding: 20px;
+            min-width: 120px;
+            padding: 15px 10px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
             font-weight: 600;
             border: none;
             background: transparent;
-            font-size: 16px;
+            font-size: 14px;
         }
 
         .tab:hover {
@@ -73,6 +72,8 @@
 
         .content {
             padding: 30px;
+            max-height: calc(100vh - 250px);
+            overflow-y: auto;
         }
 
         .tab-content {
@@ -105,6 +106,11 @@
             transition: border-color 0.3s;
         }
 
+        .form-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
         .form-group textarea {
             min-height: 100px;
             resize: vertical;
@@ -115,6 +121,27 @@
         .form-group textarea:focus {
             outline: none;
             border-color: #667eea;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            font-weight: 500;
+            cursor: pointer;
         }
 
         .upload-area {
@@ -241,6 +268,7 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
 
         .calendar-grid {
@@ -396,6 +424,11 @@
             .status-options {
                 grid-template-columns: 1fr;
             }
+
+            .tab {
+                font-size: 12px;
+                padding: 10px 5px;
+            }
         }
 
         .alert {
@@ -431,6 +464,15 @@
             border-bottom: 2px solid #667eea;
         }
 
+        .subsection-header {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #495057;
+            margin: 25px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
         .info-card {
             background: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -448,24 +490,18 @@
             margin: 8px 0;
             color: #495057;
         }
-
-        .quick-action-btns {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin: 20px 0;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏠 グループホーム請求管理システム v2</h1>
+            <h1>🏠 グループホーム請求管理システム v3</h1>
             <p>障害者共同生活援助サービス</p>
         </div>
 
         <div class="tabs">
             <button class="tab active" onclick="showTab('facility')">🏢 事業所情報</button>
+            <button class="tab" onclick="showTab('buildings')">🏘️ 建物管理</button>
             <button class="tab" onclick="showTab('users')">👤 利用者管理</button>
             <button class="tab" onclick="showTab('records')">📅 実績記録</button>
             <button class="tab" onclick="showTab('export')">📤 請求データ出力</button>
@@ -474,11 +510,9 @@
         <div class="content">
             <!-- 事業所情報タブ -->
             <div id="facility" class="tab-content active">
-                <h2 class="section-header">事業所・建物基本情報</h2>
+                <h2 class="section-header">事業所基本情報</h2>
 
                 <form id="facilityForm">
-                    <h3 style="color: #667eea; margin: 20px 0;">事業所情報</h3>
-                    
                     <div class="grid-2">
                         <div class="form-group">
                             <label>事業所番号 *</label>
@@ -510,11 +544,327 @@
                         </div>
                     </div>
 
-                    <h3 style="color: #667eea; margin: 30px 0 20px 0;">建物（ユニット）情報</h3>
-                    
-                    <div id="buildingList"></div>
-                    
-                    <button type="button" class="btn btn-info" onclick="addBuilding()">+ 建物を追加</button>
+                    <div class="form-group">
+                        <label>入員配置体制</label>
+                        <select id="residentialCareSystem">
+                            <option value="">※令和6年4月以降は、設定不要</option>
+                            <option value="共同生活援助I（4：1）">共同生活援助I（4：1）</option>
+                            <option value="共同生活援助I(6:1)">共同生活援助I(6:1)</option>
+                            <option value="共同生活援助I(6:1)・入員配置体制 12：1">共同生活援助I(6:1)・入員配置体制 12：1</option>
+                            <option value="共同生活援助I(6:1)・入員配置体制 30：1">共同生活援助I(6:1)・入員配置体制 30：1</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>入員配置体制</label>
+                        <input type="text" id="staffRatio" placeholder="例: 12:1" value="12：1">
+                    </div>
+
+                    <h3 class="subsection-header">夜間支援等体制加算</h3>
+                    <div class="form-group">
+                        <label>夜間支援等体制加算（Ⅰ）</label>
+                        <select id="nightSupportType1">
+                            <option value="">設定なし</option>
+                            <option value="2人以下">夜間支援等体制加算（Ⅰ） 2人以下</option>
+                            <option value="3人">夜間支援等体制加算（Ⅰ） 3人</option>
+                            <option value="4人">夜間支援等体制加算（Ⅰ） 4人</option>
+                            <option value="5人">夜間支援等体制加算（Ⅰ） 5人</option>
+                            <option value="6人">夜間支援等体制加算（Ⅰ） 6人</option>
+                            <option value="7人">夜間支援等体制加算（Ⅰ） 7人</option>
+                            <option value="8人">夜間支援等体制加算（Ⅰ） 8人</option>
+                            <option value="9人">夜間支援等体制加算（Ⅰ） 9人</option>
+                            <option value="10人">夜間支援等体制加算（Ⅰ） 10人</option>
+                            <option value="11人">夜間支援等体制加算（Ⅰ） 11人</option>
+                            <option value="12人">夜間支援等体制加算（Ⅰ） 12人</option>
+                            <option value="13人">夜間支援等体制加算（Ⅰ） 13人</option>
+                            <option value="14人">夜間支援等体制加算（Ⅰ） 14人</option>
+                            <option value="15人">夜間支援等体制加算（Ⅰ） 15人</option>
+                            <option value="16人">夜間支援等体制加算（Ⅰ） 16人</option>
+                            <option value="17人">夜間支援等体制加算（Ⅰ） 17人</option>
+                            <option value="18人">夜間支援等体制加算（Ⅰ） 18人</option>
+                            <option value="19人">夜間支援等体制加算（Ⅰ） 19人</option>
+                            <option value="20人">夜間支援等体制加算（Ⅰ） 20人</option>
+                            <option value="21人">夜間支援等体制加算（Ⅰ） 21人</option>
+                            <option value="22人">夜間支援等体制加算（Ⅰ） 22人</option>
+                            <option value="23人">夜間支援等体制加算（Ⅰ） 23人</option>
+                            <option value="24人">夜間支援等体制加算（Ⅰ） 24人</option>
+                            <option value="25人">夜間支援等体制加算（Ⅰ） 25人</option>
+                            <option value="26人">夜間支援等体制加算（Ⅰ） 26人</option>
+                            <option value="27人">夜間支援等体制加算（Ⅰ） 27人</option>
+                            <option value="28人">夜間支援等体制加算（Ⅰ） 28人</option>
+                            <option value="29人">夜間支援等体制加算（Ⅰ） 29人</option>
+                            <option value="30人">夜間支援等体制加算（Ⅰ） 30人</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>夜間支援等体制加算（Ⅱ）</label>
+                        <select id="nightSupportType2">
+                            <option value="">設定なし</option>
+                            <option value="4人以下">夜間支援等体制加算（Ⅱ） 4人以下</option>
+                            <option value="5人">夜間支援等体制加算（Ⅱ） 5人</option>
+                            <option value="6人">夜間支援等体制加算（Ⅱ） 6人</option>
+                            <option value="7人">夜間支援等体制加算（Ⅱ） 7人</option>
+                            <option value="8人">夜間支援等体制加算（Ⅱ） 8人</option>
+                            <option value="9人">夜間支援等体制加算（Ⅱ） 9人</option>
+                            <option value="10人">夜間支援等体制加算（Ⅱ） 10人</option>
+                            <option value="11人">夜間支援等体制加算（Ⅱ） 11人</option>
+                            <option value="12人">夜間支援等体制加算（Ⅱ） 12人</option>
+                            <option value="13人">夜間支援等体制加算（Ⅱ） 13人</option>
+                            <option value="14人">夜間支援等体制加算（Ⅱ） 14人</option>
+                            <option value="15人">夜間支援等体制加算（Ⅱ） 15人</option>
+                            <option value="16人">夜間支援等体制加算（Ⅱ） 16人</option>
+                            <option value="17人">夜間支援等体制加算（Ⅱ） 17人</option>
+                            <option value="18人">夜間支援等体制加算（Ⅱ） 18人</option>
+                            <option value="19人">夜間支援等体制加算（Ⅱ） 19人</option>
+                            <option value="20人">夜間支援等体制加算（Ⅱ） 20人</option>
+                            <option value="21人">夜間支援等体制加算（Ⅱ） 21人</option>
+                            <option value="22人">夜間支援等体制加算（Ⅱ） 22人</option>
+                            <option value="23人">夜間支援等体制加算（Ⅱ） 23人</option>
+                            <option value="24人">夜間支援等体制加算（Ⅱ） 24人</option>
+                            <option value="25人">夜間支援等体制加算（Ⅱ） 25人</option>
+                            <option value="26人">夜間支援等体制加算（Ⅱ） 26人</option>
+                            <option value="27人">夜間支援等体制加算（Ⅱ） 27人</option>
+                            <option value="28人">夜間支援等体制加算（Ⅱ） 28人</option>
+                            <option value="29人">夜間支援等体制加算（Ⅱ） 29人</option>
+                            <option value="30人">夜間支援等体制加算（Ⅱ） 30人</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>夜間支援等体制加算（Ⅲ）</label>
+                        <select id="nightSupportType3">
+                            <option value="">設定なし</option>
+                            <option value="夜間支援等体制加算（Ⅲ）">夜間支援等体制加算（Ⅲ）</option>
+                        </select>
+                    </div>
+
+                    <h3 class="subsection-header">福祉・介護職員等処遇改善加算</h3>
+                    <div class="form-group">
+                        <label>福祉・介護職員等処遇改善加算</label>
+                        <select id="treatmentImprovement">
+                            <option value="">設定なし</option>
+                            <option value="福祉・介護職員等処遇改善加算（Ⅰ）">福祉・介護職員等処遇改善加算（Ⅰ）</option>
+                            <option value="福祉・介護職員等処遇改善加算（Ⅱ）">福祉・介護職員等処遇改善加算（Ⅱ）</option>
+                            <option value="福祉・介護職員等処遇改善加算（Ⅲ）">福祉・介護職員等処遇改善加算（Ⅲ）</option>
+                            <option value="福祉・介護職員等処遇改善加算（Ⅳ）">福祉・介護職員等処遇改善加算（Ⅳ）</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(1)">福祉・介護職員等処遇改善加算（V）(1)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(2)">福祉・介護職員等処遇改善加算（V）(2)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(3)">福祉・介護職員等処遇改善加算（V）(3)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(4)">福祉・介護職員等処遇改善加算（V）(4)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(5)">福祉・介護職員等処遇改善加算（V）(5)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(6)">福祉・介護職員等処遇改善加算（V）(6)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(7)">福祉・介護職員等処遇改善加算（V）(7)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(8)">福祉・介護職員等処遇改善加算（V）(8)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(9)">福祉・介護職員等処遇改善加算（V）(9)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(10)">福祉・介護職員等処遇改善加算（V）(10)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(11)">福祉・介護職員等処遇改善加算（V）(11)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(12)">福祉・介護職員等処遇改善加算（V）(12)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(13)">福祉・介護職員等処遇改善加算（V）(13)</option>
+                            <option value="福祉・介護職員等処遇改善加算（V）(14)">福祉・介護職員等処遇改善加算（V）(14)</option>
+                        </select>
+                    </div>
+
+                    <h3 class="subsection-header">日中支援加算</h3>
+                    <div class="form-group">
+                        <label>日中支援加算</label>
+                        <select id="daySupport">
+                            <option value="">設定なし</option>
+                            <option value="日中支援加算（Ⅰ） 1人">日中支援加算（Ⅰ） 1人</option>
+                            <option value="日中支援加算（Ⅰ） 2人以上">日中支援加算（Ⅰ） 2人以上</option>
+                            <option value="日中支援加算（Ⅱ） 1人 区分4、5、6">日中支援加算（Ⅱ） 1人 区分4、5、6</option>
+                            <option value="日中支援加算（Ⅱ） 1人 区分3以下">日中支援加算（Ⅱ） 1人 区分3以下</option>
+                            <option value="日中支援加算（Ⅱ） 2人以上 区分4、5、6">日中支援加算（Ⅱ） 2人以上 区分4、5、6</option>
+                            <option value="日中支援加算（Ⅱ） 2人以上 区分3以下">日中支援加算（Ⅱ） 2人以上 区分3以下</option>
+                        </select>
+                    </div>
+
+                    <h3 class="subsection-header">福祉専門職員配置等加算</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="specialistAllowance" value="福祉専門職員配置等加算">
+                                <label for="specialistAllowance">福祉専門職員配置等加算</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">視覚・聴覚言語障害者支援体制加算</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="sensorySupport" value="視覚・聴覚言語障害者支援体制加算">
+                                <label for="sensorySupport">視覚・聴覚言語障害者支援体制加算</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">看護職員配置加算</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="nurseAllowance" value="看護職員配置加算">
+                                <label for="nurseAllowance">看護職員配置加算</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">医療連携体制加算</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="medicalCooperation" value="医療連携体制加算（Ⅵ）">
+                                <label for="medicalCooperation">医療連携体制加算（Ⅵ）</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>実績記録等の整備に必要</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="medicalCooperationRecord" value="実績記録等の整備に必要">
+                                <label for="medicalCooperationRecord">実績記録等の整備に必要</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">看護職員数</h3>
+                    <div class="form-group">
+                        <input type="number" id="nurseCount" placeholder="看護職員数">
+                    </div>
+
+                    <h3 class="subsection-header">通勤者生活支援加算</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="commuterSupport" value="通勤者生活支援加算">
+                                <label for="commuterSupport">通勤者生活支援加算</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">居住支援体制</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="housingSupport" value="居住支援体制">
+                                <label for="housingSupport">居住支援体制</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">移行支援住体制</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="transitionSupport" value="移行支援住体制">
+                                <label for="transitionSupport">移行支援住体制</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">ピアサポート実施加算</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="peerSupport" value="ピアサポート実施加算">
+                                <label for="peerSupport">ピアサポート実施加算</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">障害者支援施設等感染対策向上加算</h3>
+                    <div class="form-group">
+                        <label>障害者支援施設等感染対策向上加算</label>
+                        <select id="infectionControl">
+                            <option value="">設定なし</option>
+                            <option value="障害者支援施設等感染対策向上加算（Ⅰ）">障害者支援施設等感染対策向上加算（Ⅰ）</option>
+                            <option value="障害者支援施設等感染対策向上加算（Ⅱ）">障害者支援施設等感染対策向上加算（Ⅱ）</option>
+                            <option value="障害者支援施設等感染対策向上加算（Ⅰ）（Ⅱ）">障害者支援施設等感染対策向上加算（Ⅰ）（Ⅱ）</option>
+                        </select>
+                    </div>
+
+                    <h3 class="subsection-header">中核的配置等加算体制</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="coreStaffing" value="中核的配置等加算体制">
+                                <label for="coreStaffing">中核的配置等加算体制</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">高次脳機能部者支援体制</h3>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="brainInjurySupport" value="高次脳機能部者支援体制">
+                                <label for="brainInjurySupport">高次脳機能部者支援体制</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="subsection-header">減算</h3>
+                    <div class="form-group">
+                        <label>大規模住居等減算</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="largeScaleReduction" value="大規模住居等減算">
+                                <label for="largeScaleReduction">世帯人数は生活支援員の員数が基準に満たない</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>サービス管理責任者の員数が基準に満たない</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="serviceManagerReduction" value="サービス管理責任者不足">
+                                <label for="serviceManagerReduction">サービス管理責任者の員数が基準に満たない</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>身体拘束廃止未実施減算</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="restraintReduction" value="身体拘束廃止未実施">
+                                <label for="restraintReduction">身体拘束廃止未実施減算</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>虐待防止措置未実施減算</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="abusePreventionReduction" value="虐待防止措置未実施">
+                                <label for="abusePreventionReduction">虐待防止措置未実施減算</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>業務継続計画未策定減算</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="bcpReduction" value="業務継続計画未策定">
+                                <label for="bcpReduction">業務継続計画未策定減算</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>情報公表未報告減算</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="infoDisclosureReduction" value="情報公表未報告">
+                                <label for="infoDisclosureReduction">情報公表未報告減算</label>
+                            </div>
+                        </div>
+                    </div>
 
                     <div style="margin-top: 30px;">
                         <button type="submit" class="btn btn-primary">💾 保存</button>
@@ -522,6 +872,17 @@
                 </form>
 
                 <div id="facilityInfo" style="margin-top: 40px;"></div>
+            </div>
+
+            <!-- 建物管理タブ -->
+            <div id="buildings" class="tab-content">
+                <h2 class="section-header">建物（ユニット）管理</h2>
+
+                <div id="buildingList"></div>
+                
+                <button type="button" class="btn btn-info" onclick="addBuilding()">+ 建物を追加</button>
+
+                <div id="buildingInfo" style="margin-top: 40px;"></div>
             </div>
 
             <!-- 利用者管理タブ -->
@@ -703,6 +1064,7 @@
             updateCalendar();
             updateUnitOptions();
             displayFacilityInfo();
+            displayBuildingInfo();
             
             const today = new Date();
             document.getElementById('exportMonth').value = 
@@ -726,8 +1088,158 @@
                 document.getElementById('facilityName').value = facility.facilityName || '';
                 document.getElementById('corporationName').value = facility.corporationName || '';
                 document.getElementById('areaCode').value = facility.areaCode || '01';
+                document.getElementById('residentialCareSystem').value = facility.residentialCareSystem || '';
+                document.getElementById('staffRatio').value = facility.staffRatio || '12：1';
+                document.getElementById('nurseCount').value = facility.nurseCount || '';
+                document.getElementById('nightSupportType1').value = facility.nightSupportType1 || '';
+                document.getElementById('nightSupportType2').value = facility.nightSupportType2 || '';
+                document.getElementById('nightSupportType3').value = facility.nightSupportType3 || '';
+                document.getElementById('treatmentImprovement').value = facility.treatmentImprovement || '';
+                document.getElementById('daySupport').value = facility.daySupport || '';
+                document.getElementById('infectionControl').value = facility.infectionControl || '';
+
+                // チェックボックスの復元
+                const checkboxes = [
+                    'specialistAllowance', 'sensorySupport', 'nurseAllowance', 
+                    'medicalCooperation', 'medicalCooperationRecord', 'commuterSupport',
+                    'housingSupport', 'transitionSupport', 'peerSupport',
+                    'coreStaffing', 'brainInjurySupport', 'largeScaleReduction',
+                    'serviceManagerReduction', 'restraintReduction', 'abusePreventionReduction',
+                    'bcpReduction', 'infoDisclosureReduction'
+                ];
+
+                checkboxes.forEach(id => {
+                    const checkbox = document.getElementById(id);
+                    if (checkbox && facility[id]) {
+                        checkbox.checked = true;
+                    }
+                });
             }
         }
+
+        document.getElementById('facilityForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            facility = {
+                facilityNumber: document.getElementById('facilityNumber').value,
+                facilityName: document.getElementById('facilityName').value,
+                corporationName: document.getElementById('corporationName').value,
+                areaCode: document.getElementById('areaCode').value,
+                residentialCareSystem: document.getElementById('residentialCareSystem').value,
+                staffRatio: document.getElementById('staffRatio').value,
+                nurseCount: document.getElementById('nurseCount').value,
+                nightSupportType1: document.getElementById('nightSupportType1').value,
+                nightSupportType2: document.getElementById('nightSupportType2').value,
+                nightSupportType3: document.getElementById('nightSupportType3').value,
+                treatmentImprovement: document.getElementById('treatmentImprovement').value,
+                daySupport: document.getElementById('daySupport').value,
+                infectionControl: document.getElementById('infectionControl').value
+            };
+
+            // チェックボックスの保存
+            const checkboxes = [
+                'specialistAllowance', 'sensorySupport', 'nurseAllowance',
+                'medicalCooperation', 'medicalCooperationRecord', 'commuterSupport',
+                'housingSupport', 'transitionSupport', 'peerSupport',
+                'coreStaffing', 'brainInjurySupport', 'largeScaleReduction',
+                'serviceManagerReduction', 'restraintReduction', 'abusePreventionReduction',
+                'bcpReduction', 'infoDisclosureReduction'
+            ];
+
+            checkboxes.forEach(id => {
+                const checkbox = document.getElementById(id);
+                facility[id] = checkbox ? checkbox.checked : false;
+            });
+
+            localStorage.setItem('gh_facility', JSON.stringify(facility));
+            
+            displayFacilityInfo();
+            alert('✅ 事業所情報を保存しました！');
+        });
+
+        function displayFacilityInfo() {
+            const container = document.getElementById('facilityInfo');
+            if (!facility.facilityNumber) return;
+
+            const activeAdditions = [];
+            const activeReductions = [];
+
+            // 選択式の加算
+            if (facility.nightSupportType1) activeAdditions.push('夜間支援等体制加算（Ⅰ）: ' + facility.nightSupportType1);
+            if (facility.nightSupportType2) activeAdditions.push('夜間支援等体制加算（Ⅱ）: ' + facility.nightSupportType2);
+            if (facility.nightSupportType3) activeAdditions.push(facility.nightSupportType3);
+            if (facility.treatmentImprovement) activeAdditions.push(facility.treatmentImprovement);
+            if (facility.daySupport) activeAdditions.push(facility.daySupport);
+            if (facility.infectionControl) activeAdditions.push(facility.infectionControl);
+
+            const additions = {
+                specialistAllowance: '福祉専門職員配置等加算',
+                sensorySupport: '視覚・聴覚言語障害者支援体制加算',
+                nurseAllowance: '看護職員配置加算',
+                medicalCooperation: '医療連携体制加算（Ⅵ）',
+                medicalCooperationRecord: '医療連携（実績記録等の整備に必要）',
+                commuterSupport: '通勤者生活支援加算',
+                housingSupport: '居住支援体制',
+                transitionSupport: '移行支援住体制',
+                peerSupport: 'ピアサポート実施加算',
+                coreStaffing: '中核的配置等加算体制',
+                brainInjurySupport: '高次脳機能部者支援体制'
+            };
+
+            const reductions = {
+                largeScaleReduction: '大規模住居等減算',
+                serviceManagerReduction: 'サービス管理責任者不足',
+                restraintReduction: '身体拘束廃止未実施減算',
+                abusePreventionReduction: '虐待防止措置未実施減算',
+                bcpReduction: '業務継続計画未策定減算',
+                infoDisclosureReduction: '情報公表未報告減算'
+            };
+
+            Object.keys(additions).forEach(key => {
+                if (facility[key]) activeAdditions.push(additions[key]);
+            });
+
+            Object.keys(reductions).forEach(key => {
+                if (facility[key]) activeReductions.push(reductions[key]);
+            });
+
+            container.innerHTML = `
+                <h2 class="section-header">登録情報</h2>
+                <div class="info-card">
+                    <h3>事業所基本情報</h3>
+                    <p><strong>事業所番号:</strong> ${facility.facilityNumber}</p>
+                    <p><strong>事業所名:</strong> ${facility.facilityName}</p>
+                    <p><strong>法人名:</strong> ${facility.corporationName}</p>
+                    <p><strong>地域区分:</strong> ${getAreaName(facility.areaCode)}</p>
+                    ${facility.residentialCareSystem ? `<p><strong>入員配置体制:</strong> ${facility.residentialCareSystem}</p>` : ''}
+                    ${facility.staffRatio ? `<p><strong>職員配置:</strong> ${facility.staffRatio}</p>` : ''}
+                    ${facility.nurseCount ? `<p><strong>看護職員数:</strong> ${facility.nurseCount}人</p>` : ''}
+                </div>
+                ${activeAdditions.length > 0 ? `
+                <div class="info-card">
+                    <h3>有効な加算</h3>
+                    ${activeAdditions.map(a => `<p>✅ ${a}</p>`).join('')}
+                </div>
+                ` : ''}
+                ${activeReductions.length > 0 ? `
+                <div class="info-card" style="border-color: #f8d7da;">
+                    <h3 style="color: #721c24;">適用中の減算</h3>
+                    ${activeReductions.map(r => `<p>⚠️ ${r}</p>`).join('')}
+                </div>
+                ` : ''}
+            `;
+        }
+
+        function getAreaName(code) {
+            const areas = {
+                '01': '一級地', '02': '二級地', '03': '三級地',
+                '04': '四級地', '05': '五級地', '06': '六級地',
+                '07': '七級地', '20': 'その他'
+            };
+            return areas[code] || code;
+        }
+
+        // ========== 建物管理 ==========
 
         function addBuilding() {
             const building = {
@@ -748,13 +1260,13 @@
                 localStorage.setItem('gh_buildings', JSON.stringify(buildings));
                 renderBuildingList();
                 updateUnitOptions();
+                displayBuildingInfo();
             }
         }
 
         function renderBuildingList() {
             const container = document.getElementById('buildingList');
             if (buildings.length === 0) {
-                // デフォルトの建物を追加
                 buildings = [
                     { id: 'nakano', name: 'Nakano. settle', capacity: 7, nightSupport: true, medicalCooperation: true, largeScale: false },
                     { id: 'nerima', name: 'Nerima. settle', capacity: 5, nightSupport: true, medicalCooperation: false, largeScale: false },
@@ -800,6 +1312,7 @@
             `).join('');
 
             updateUnitOptions();
+            displayBuildingInfo();
         }
 
         function updateBuilding(id, field, value) {
@@ -808,6 +1321,7 @@
                 building[field] = field === 'capacity' ? parseInt(value) : value;
                 localStorage.setItem('gh_buildings', JSON.stringify(buildings));
                 updateUnitOptions();
+                displayBuildingInfo();
             }
         }
 
@@ -817,56 +1331,22 @@
                 buildings.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
         }
 
-        document.getElementById('facilityForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            facility = {
-                facilityNumber: document.getElementById('facilityNumber').value,
-                facilityName: document.getElementById('facilityName').value,
-                corporationName: document.getElementById('corporationName').value,
-                areaCode: document.getElementById('areaCode').value
-            };
-
-            localStorage.setItem('gh_facility', JSON.stringify(facility));
-            localStorage.setItem('gh_buildings', JSON.stringify(buildings));
-            
-            displayFacilityInfo();
-            alert('✅ 事業所情報を保存しました！');
-        });
-
-        function displayFacilityInfo() {
-            const container = document.getElementById('facilityInfo');
-            if (!facility.facilityNumber) return;
+        function displayBuildingInfo() {
+            const container = document.getElementById('buildingInfo');
+            if (buildings.length === 0) return;
 
             container.innerHTML = `
-                <h2 class="section-header">登録情報</h2>
+                <h2 class="section-header">建物一覧</h2>
                 <div class="info-card">
-                    <h3>事業所情報</h3>
-                    <p><strong>事業所番号:</strong> ${facility.facilityNumber}</p>
-                    <p><strong>事業所名:</strong> ${facility.facilityName}</p>
-                    <p><strong>法人名:</strong> ${facility.corporationName}</p>
-                    <p><strong>地域区分:</strong> ${getAreaName(facility.areaCode)}</p>
-                </div>
-                <div class="info-card">
-                    <h3>建物情報</h3>
                     ${buildings.map(b => `
                         <p><strong>${b.name}</strong> - 定員${b.capacity}人
-                        ${b.nightSupport ? '🌙夜間支援' : ''}
-                        ${b.medicalCooperation ? '🏥医療連携' : ''}
-                        ${b.largeScale ? '⚠️大規模減算' : ''}
+                        ${b.nightSupport ? ' 🌙夜間支援' : ''}
+                        ${b.medicalCooperation ? ' 🏥医療連携' : ''}
+                        ${b.largeScale ? ' ⚠️大規模減算' : ''}
                         </p>
                     `).join('')}
                 </div>
             `;
-        }
-
-        function getAreaName(code) {
-            const areas = {
-                '01': '一級地', '02': '二級地', '03': '三級地',
-                '04': '四級地', '05': '五級地', '06': '六級地',
-                '07': '七級地', '20': 'その他'
-            };
-            return areas[code] || code;
         }
 
         // ========== OCR機能 ==========
@@ -929,7 +1409,6 @@
             const progress = document.getElementById('ocrProgress');
             progress.textContent = '📄 PDFを画像に変換中...';
             
-            // PDFを画像として読み込む簡易版
             alert('📝 PDFのOCRは現在開発中です。画像形式（PNG/JPEG）での読み込みをお試しください。\n\nまたは、PDFを開いてスクリーンショットを撮り、その画像をアップロードしてください。');
             progress.style.display = 'none';
         }
@@ -943,7 +1422,6 @@
                 try {
                     progress.textContent = '🔍 OCR処理中... 0%';
                     
-                    // Tesseract.jsでOCR実行
                     const result = await Tesseract.recognize(
                         e.target.result,
                         'jpn',
@@ -981,13 +1459,11 @@
         function extractCertificateData(text) {
             console.log('抽出元テキスト:', text);
             
-            // 受給者証番号（10桁）
             const certMatch = text.match(/\d{10}/);
             if (certMatch) {
                 document.getElementById('certificateNumber').value = certMatch[0];
             }
 
-            // 氏名
             const namePatterns = [
                 /氏[\s　]*名[：:\s　]*([^\n\r　]{2,10})/,
                 /受給者氏名[：:\s　]*([^\n\r　]{2,10})/,
@@ -1004,13 +1480,11 @@
                 }
             }
 
-            // 市町村番号（6桁）
             const cityMatch = text.match(/\d{6}/);
             if (cityMatch && cityMatch[0] !== certMatch?.[0]) {
                 document.getElementById('cityCode').value = cityMatch[0];
             }
 
-            // 障害支援区分
             const supportMatch = text.match(/区分[　\s]*([１-６1-6])/);
             if (supportMatch) {
                 const num = supportMatch[1].replace(/[１-６]/g, (s) => 
