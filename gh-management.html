@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>グループホーム請求管理システム 　v6</title>
+    <title>グループホーム請求管理システム v7</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
     <style>
         * {
@@ -616,7 +616,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏠 グループホーム請求管理システム v6</h1>
+            <h1>🏠 グループホーム請求管理システム v7</h1>
             <p>障害者共同生活援助サービス</p>
         </div>
 
@@ -1497,32 +1497,131 @@
                 </div>
 
                 <div class="calendar-actions">
-                    <button class="btn btn-success" onclick="fillMonth('○')">✅ 全て本入居（○）で埋める</button>
+                    <button class="btn btn-success" onclick="fillMonth('○（本入居）')">✅ 全て本入居（○）で埋める</button>
                     <button class="btn btn-warning" onclick="fillMonth('外泊')">🏖️ 全て外泊で埋める</button>
                     <button class="btn btn-info" onclick="fillMonth('入院')">🏥 全て入院で埋める</button>
                     <button class="btn btn-secondary" onclick="clearMonth()">🗑️ 今月をクリア</button>
                 </div>
 
                 <div id="calendar" class="calendar"></div>
+
+                <div style="margin-top:20px; padding:16px; background:#fff; border-top:2px solid #eee; text-align:center;">
+                    <p style="font-size:0.85em; color:#888; margin-bottom:10px;">カレンダーの各日付をクリックして記録を入力してください</p>
+                    <button class="btn btn-primary" onclick="confirmSaveAllRecords()" style="background:#e91e8c; border-color:#e91e8c; padding:12px 40px; font-size:1em;">💾 保存する</button>
+                </div>
             </div>
 
             <!-- 請求データ出力タブ -->
             <div id="export" class="tab-content">
                 <h2 class="section-header">請求データ出力</h2>
-                
-                <div class="alert alert-info">
-                    <strong>📋 出力内容</strong><br>
-                    ・SE: 訓練等給付費等明細書（様式第三）<br>
-                    ・SV: 共同生活援助サービス提供実績記録票
+
+                <!-- 対象年月・利用者選択 -->
+                <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; margin-bottom:20px;">
+                    <div>
+                        <label style="font-size:0.85em; color:#555; display:block; margin-bottom:4px;">対象年月</label>
+                        <input type="month" id="exportMonth" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.85em; color:#555; display:block; margin-bottom:4px;">印刷日</label>
+                        <input type="date" id="exportPrintDate" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.85em; color:#555; display:block; margin-bottom:4px;">受領日（代理受領通知票用）</label>
+                        <input type="date" id="exportReceiveDate" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
+                    </div>
                 </div>
 
-                <div class="form-group">
-                    <label>対象年月</label>
-                    <input type="month" id="exportMonth">
+                <!-- 利用者選択 -->
+                <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <strong style="font-size:0.9em;">出力対象利用者</strong>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-secondary" onclick="selectAllExportUsers(true)" style="padding:4px 10px; font-size:0.8em;">全選択</button>
+                            <button class="btn btn-secondary" onclick="selectAllExportUsers(false)" style="padding:4px 10px; font-size:0.8em;">全解除</button>
+                        </div>
+                    </div>
+                    <div id="exportUserList" style="display:flex; flex-wrap:wrap; gap:8px; max-height:150px; overflow-y:auto;"></div>
                 </div>
 
-                <button class="btn btn-success" onclick="exportCSV('SE')">📄 SE（明細書）をダウンロード</button>
-                <button class="btn btn-success" onclick="exportCSV('SV')">📄 SV（実績記録票）をダウンロード</button>
+                <!-- 国保連送信用CSVファイル -->
+                <div style="border:1px solid #ddd; border-radius:8px; overflow:hidden; margin-bottom:20px;">
+                    <div style="background:#f0f4ff; padding:12px 16px; border-bottom:1px solid #ddd;">
+                        <strong>国保連送信用CSVファイル</strong>
+                        <p style="font-size:0.8em; color:#666; margin:4px 0 0;">国保連請求時に、各ファイルをダウンロードして取込送信V2（電子請求受付システム）に添付して送信します。</p>
+                    </div>
+                    <div style="padding:16px; display:flex; flex-direction:column; gap:14px;">
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px;">介護給付費・訓練等給付費等請求書・明細書　【SE】</p>
+                            <button class="btn btn-primary" onclick="exportCSV('SE')" style="background:#e91e8c; border-color:#e91e8c;">ダウンロード</button>
+                        </div>
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px;">利用者負担上限額管理結果票　【RK】　<span style="color:#888; font-size:0.85em;">（※自事業所が「原籍管理事業者の場合のみ使用）</span></p>
+                            <button class="btn btn-primary" onclick="exportCSV('RK')" style="background:#e91e8c; border-color:#e91e8c;">ダウンロード</button>
+                        </div>
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px;">サービス提供実績記録票　【SV】</p>
+                            <button class="btn btn-primary" onclick="exportCSV('SV')" style="background:#e91e8c; border-color:#e91e8c;">ダウンロード</button>
+                        </div>
+                        <p style="font-size:0.78em; color:#888;">基本的には【SE】と【SV】ファイルの2種類をダウンロードして送信します。また、送信エラーの原因になるため、CSVファイルはダウンロード後、開封せずにその未添付してください（CSVファイルは送信用なので閲覧不要です）。</p>
+                    </div>
+                </div>
+
+                <!-- 帳票印刷用PDFファイル -->
+                <div style="border:1px solid #ddd; border-radius:8px; overflow:hidden; margin-bottom:20px;">
+                    <div style="background:#f0f4ff; padding:12px 16px; border-bottom:1px solid #ddd;">
+                        <strong>帳票印刷用PDFファイル</strong>
+                        <p style="font-size:0.8em; color:#666; margin:4px 0 0;">ダウンロードしたPDFファイルは必ず保存し、保管してください。</p>
+                    </div>
+                    <div style="padding:16px; display:flex; flex-direction:column; gap:14px;">
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px;">介護給付費・訓練等給付費等請求書・明細書　【SE】　<span style="color:#888; font-size:0.85em;">...請求書・明細書の確認用</span></p>
+                            <button class="btn btn-primary" onclick="exportPDF('SE')" style="background:#e91e8c; border-color:#e91e8c;">ダウンロード</button>
+                        </div>
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px;">利用者負担上限額管理結果票　【RK】　<span style="color:#888; font-size:0.85em;">（※自事業所が「原籍（管理）」事業者の場合のみ使用）</span></p>
+                            <button class="btn btn-primary" onclick="exportPDF('RK')" style="background:#e91e8c; border-color:#e91e8c;">ダウンロード</button>
+                        </div>
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px;">利用者負担額一覧表　<span style="color:#888; font-size:0.85em;">（※自事業所が「原籍（関係）」事業者の場合のみ使用）</span></p>
+                            <button class="btn btn-primary" onclick="exportPDF('負担額一覧')" style="background:#e91e8c; border-color:#e91e8c;">ダウンロード</button>
+                        </div>
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px;">サービス提供実績記録票　【SV】　<span style="color:#888; font-size:0.85em;">...日ベースで保管が必要（利用者署名欄あり）</span></p>
+                            <button class="btn btn-primary" onclick="exportPDF('SV')" style="background:#e91e8c; border-color:#e91e8c;">ダウンロード</button>
+                        </div>
+                        <hr style="border:none; border-top:1px solid #eee;">
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px; font-weight:600;">利用者請求書</p>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <button class="btn btn-primary" onclick="exportPDF('請求書PDF')" style="background:#e91e8c; border-color:#e91e8c; padding:6px 14px;">PDF</button>
+                                <button class="btn btn-success" onclick="exportExcel('請求書')" style="background:#217346; border-color:#217346; padding:6px 14px;">EXCEL</button>
+                                <span style="font-size:0.85em; color:#555;">印刷日</span>
+                                <input type="date" id="exportPrintDate2" style="padding:5px 8px; border:1px solid #ddd; border-radius:5px; font-size:0.85em;">
+                            </div>
+                        </div>
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px; font-weight:600;">利用者領収書</p>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <button class="btn btn-primary" onclick="exportPDF('領収書PDF')" style="background:#e91e8c; border-color:#e91e8c; padding:6px 14px;">PDF</button>
+                                <button class="btn btn-success" onclick="exportExcel('領収書')" style="background:#217346; border-color:#217346; padding:6px 14px;">EXCEL</button>
+                                <span style="font-size:0.85em; color:#555;">印刷日</span>
+                                <input type="date" id="exportPrintDate3" style="padding:5px 8px; border:1px solid #ddd; border-radius:5px; font-size:0.85em;">
+                            </div>
+                        </div>
+                        <div>
+                            <p style="font-size:0.85em; margin-bottom:6px; font-weight:600;">代理受領通知票</p>
+                            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                                <button class="btn btn-primary" onclick="exportPDF('代理受領PDF')" style="background:#e91e8c; border-color:#e91e8c; padding:6px 14px;">PDF</button>
+                                <button class="btn btn-success" onclick="exportExcel('代理受領')" style="background:#217346; border-color:#217346; padding:6px 14px;">EXCEL</button>
+                                <span style="font-size:0.85em; color:#555;">印刷日</span>
+                                <input type="date" id="exportPrintDate4" style="padding:5px 8px; border:1px solid #ddd; border-radius:5px; font-size:0.85em;">
+                                <span style="font-size:0.85em; color:#555;">受領日</span>
+                                <input type="date" id="exportReceiveDate2" style="padding:5px 8px; border:1px solid #ddd; border-radius:5px; font-size:0.85em;">
+                                <span style="font-size:0.78em; color:#888;">（※受領日：国保連請求で入金された日）</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div id="exportStatus" style="margin-top: 20px;"></div>
             </div>
@@ -1728,6 +1827,21 @@
             
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
+
+            if (tabName === 'export') {
+                renderExportUserList();
+                // 今月を初期値に
+                const today = new Date();
+                const m = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0');
+                if (!document.getElementById('exportMonth').value) {
+                    document.getElementById('exportMonth').value = m;
+                }
+                const todayStr = today.toISOString().slice(0,10);
+                ['exportPrintDate','exportPrintDate2','exportPrintDate3','exportPrintDate4'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el && !el.value) el.value = todayStr;
+                });
+            }
         }
 
         // ========== 事業所情報管理 ==========
@@ -3537,83 +3651,137 @@
 
         // ========== CSV出力 ==========
 
-        function exportCSV(type) {
-            const month = document.getElementById('exportMonth').value;
-            if (!month) {
-                alert('対象年月を選択してください');
+        // ===== 実績記録の保存確認 =====
+        function confirmSaveAllRecords() {
+            if (!selectedUserId) {
+                alert('利用者を選択してください');
                 return;
             }
-
-            const [year, mon] = month.split('-');
-            
-            if (type === 'SE') {
-                generateSE(year, mon);
-            } else if (type === 'SV') {
-                generateSV(year, mon);
+            const user = users.find(u => u.id === selectedUserId);
+            const userName = user ? user.name : '';
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const prefix = currentYear + '-' + String(currentMonth + 1).padStart(2, '0');
+            const count = records[selectedUserId]
+                ? Object.keys(records[selectedUserId]).filter(d => d.startsWith(prefix)).length
+                : 0;
+            if (confirm(userName + ' の ' + currentYear + '年' + (currentMonth+1) + '月 の実績（' + count + '件）を保存済みです。\n\n記録はリアルタイムに保存されています。')) {
+                alert('✅ ' + userName + ' の ' + currentYear + '年' + (currentMonth+1) + '月の実績記録を確認しました。');
             }
         }
 
-        function generateSE(year, month) {
-            let csv = '"1","1","0","11","J11","0","' + facility.facilityNumber + '","0","1","' + year + month + '","0"\n';
-            
+        // ===== 請求データ出力 =====
+        function renderExportUserList() {
+            const div = document.getElementById('exportUserList');
+            if (!div) return;
+            if (users.length === 0) {
+                div.innerHTML = '<p style="color:#aaa; font-size:0.85em;">利用者が登録されていません</p>';
+                return;
+            }
+            div.innerHTML = users.map(u =>
+                '<label style="display:flex; align-items:center; gap:6px; padding:5px 10px; background:white; border:1px solid #ddd; border-radius:20px; cursor:pointer; font-size:0.85em; white-space:nowrap;">' +
+                '<input type="checkbox" class="exportUserCheck" value="' + u.id + '" checked>' +
+                u.name +
+                '</label>'
+            ).join('');
+        }
+
+        function selectAllExportUsers(val) {
+            document.querySelectorAll('.exportUserCheck').forEach(cb => cb.checked = val);
+        }
+
+        function getSelectedExportUsers() {
+            const checked = [...document.querySelectorAll('.exportUserCheck:checked')].map(cb => cb.value);
+            return users.filter(u => checked.includes(u.id));
+        }
+
+        function exportCSV(type) {
+            const month = document.getElementById('exportMonth').value;
+            if (!month) { alert('対象年月を選択してください'); return; }
+            const [year, mon] = month.split('-');
+            const targetUsers = getSelectedExportUsers();
+            if (targetUsers.length === 0) { alert('出力対象の利用者を選択してください'); return; }
+            if (type === 'SE') generateSE(year, mon, targetUsers);
+            else if (type === 'SV') generateSV(year, mon, targetUsers);
+            else if (type === 'RK') {
+                alert('RK（利用者負担上限額管理結果票）は上限額管理対象者がいる場合に使用します。\n現在このCSVの自動生成は準備中です。');
+            }
+        }
+
+        function exportPDF(type) {
+            const month = document.getElementById('exportMonth').value;
+            if (!month) { alert('対象年月を選択してください'); return; }
+            document.getElementById('exportStatus').innerHTML =
+                '<div class="alert alert-info">ℹ️ ' + type + ' のPDF出力機能は現在準備中です。</div>';
+        }
+
+        function exportExcel(type) {
+            const month = document.getElementById('exportMonth').value;
+            if (!month) { alert('対象年月を選択してください'); return; }
+            document.getElementById('exportStatus').innerHTML =
+                '<div class="alert alert-info">ℹ️ ' + type + ' のExcel出力機能は現在準備中です。</div>';
+        }
+
+        function generateSE(year, month, targetUsers) {
+            let csv = '"1","1","0","11","J11","0","' + (facility.facilityNumber||'') + '","0","1","' + year + month + '","0"\n';
             let lineNum = 2;
-            users.forEach(user => {
+            targetUsers.forEach(user => {
                 const recordCount = countRecordsForMonth(user.id, year, month);
                 if (recordCount > 0) {
-                    csv += `"2","${lineNum}","J111","01","${year}${month}","${user.cityCode}","${facility.facilityNumber}","135001","1","10776","125001","125001","0","0","0","1","10000","10000","2","10776","135001","135001","0","0","0"\n`;
+                    const certNo = (user.certificates && user.certificates.length > 0)
+                        ? (user.certificates.slice().sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0].certNo || '')
+                        : '';
+                    const cityCode = (user.certificates && user.certificates.length > 0)
+                        ? (user.certificates.slice().sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0].certCityCode || '')
+                        : '';
+                    csv += '"2","' + lineNum + '","J111","01","' + year + month + '","' + cityCode + '","' + (facility.facilityNumber||'') + '","135001","1","10776","125001","125001","0","0","0","1","10000","10000","2","10776","135001","135001","0","0","0"\n';
                     lineNum++;
                 }
             });
-
-            csv += `"3","${lineNum}"\n`;
-            downloadCSV(csv, `SE${year}${month}.csv`);
+            csv += '"3","' + lineNum + '"\n';
+            downloadCSV(csv, 'SE' + year + month + '.csv');
         }
 
-        function generateSV(year, month) {
-            let csv = '"1","1","0","32","J61","0","' + facility.facilityNumber + '","0","1","' + year + month + '","0"\n';
-            
+        function generateSV(year, month, targetUsers) {
+            let csv = '"1","1","0","32","J61","0","' + (facility.facilityNumber||'') + '","0","1","' + year + month + '","0"\n';
             let lineNum = 2;
-            users.forEach(user => {
+            targetUsers.forEach(user => {
                 const monthRecords = getMonthRecords(user.id, year, month);
                 if (Object.keys(monthRecords).length > 0) {
-                    csv += `"2","${lineNum}","J611","01","${year}${month}","${user.cityCode}","${facility.facilityNumber}","${user.certificateNumber}","1801"\n`;
+                    const certNo = (user.certificates && user.certificates.length > 0)
+                        ? (user.certificates.slice().sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0].certNo || '')
+                        : '';
+                    const cityCode = (user.certificates && user.certificates.length > 0)
+                        ? (user.certificates.slice().sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0].certCityCode || '')
+                        : '';
+                    csv += '"2","' + lineNum + '","J611","01","' + year + month + '","' + cityCode + '","' + (facility.facilityNumber||'') + '","' + certNo + '","1801"\n';
                     lineNum++;
-
-                    const daysInMonth = new Date(year, month, 0).getDate();
+                    const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
                     for (let day = 1; day <= daysInMonth; day++) {
-                        const dateStr = `${year}-${month.padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const dateStr = year + '-' + month.padStart(2,'0') + '-' + String(day).padStart(2,'0');
                         const record = monthRecords[dateStr];
-                        const status = record ? (record.status === '○' ? '3' : '') : '';
-                        
-                        csv += `"2","${lineNum}","J611","02","${year}${month}","${user.cityCode}","${facility.facilityNumber}","${user.certificateNumber}","1801","","${day}","","","","","","","","","","","","","","","","","","","","","","","","","","","${status}"\n`;
+                        const status = record ? (record.status === '○（本入居）' || record.status === '○' ? '3' : '') : '';
+                        csv += '"2","' + lineNum + '","J611","02","' + year + month + '","' + cityCode + '","' + (facility.facilityNumber||'') + '","' + certNo + '","1801","","' + day + '","","","","","","","","","","","","","","","","","","","","","","","","","","","' + status + '"\n';
                         lineNum++;
                     }
                 }
             });
-
-            csv += `"3","${lineNum}"\n`;
-            downloadCSV(csv, `SV${year}${month}.csv`);
+            csv += '"3","' + lineNum + '"\n';
+            downloadCSV(csv, 'SV' + year + month + '.csv');
         }
 
         function countRecordsForMonth(userId, year, month) {
             if (!records[userId]) return 0;
-            
-            const prefix = `${year}-${month.padStart(2, '0')}`;
+            const prefix = year + '-' + month.padStart(2, '0');
             return Object.keys(records[userId]).filter(date => date.startsWith(prefix)).length;
         }
 
         function getMonthRecords(userId, year, month) {
             if (!records[userId]) return {};
-            
-            const prefix = `${year}-${month.padStart(2, '0')}`;
+            const prefix = year + '-' + month.padStart(2, '0');
             const monthRecords = {};
-            
             Object.entries(records[userId]).forEach(([date, record]) => {
-                if (date.startsWith(prefix)) {
-                    monthRecords[date] = record;
-                }
+                if (date.startsWith(prefix)) monthRecords[date] = record;
             });
-            
             return monthRecords;
         }
 
@@ -3624,9 +3792,8 @@
             link.href = URL.createObjectURL(blob);
             link.download = filename;
             link.click();
-            
-            document.getElementById('exportStatus').innerHTML = 
-                `<div class="alert alert-success">✅ ${filename} をダウンロードしました</div>`;
+            document.getElementById('exportStatus').innerHTML =
+                '<div class="alert alert-success">✅ ' + filename + ' をダウンロードしました</div>';
         }
     </script>
 </body>
