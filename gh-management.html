@@ -340,8 +340,10 @@
             height: 100%;
             background: rgba(0,0,0,0.5);
             z-index: 1000;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            overflow-y: auto;
+            padding: 20px 0;
         }
 
         .modal.active {
@@ -350,19 +352,103 @@
 
         .modal-content {
             background: white;
-            padding: 30px;
+            padding: 24px;
             border-radius: 12px;
-            max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
+            max-width: 480px;
+            width: 95%;
+            max-height: 90vh;
             overflow-y: auto;
+            position: relative;
         }
 
         .modal-header {
-            font-size: 1.5em;
-            font-weight: 600;
-            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-close {
+            cursor: pointer;
+            font-size: 1.2em;
+            color: #888;
+            background: none;
+            border: none;
+            padding: 0 4px;
+        }
+
+        .modal-section {
+            margin-bottom: 14px;
+        }
+
+        .modal-label {
+            font-size: 0.85em;
+            color: #555;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modal-label input[type=checkbox] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .modal-hint {
+            font-size: 0.75em;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .modal select, .modal input[type=text], .modal input[type=date] {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+
+        .modal-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .modal-checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 0;
+        }
+
+        .modal-collapse-btn {
             color: #667eea;
+            cursor: pointer;
+            font-size: 0.85em;
+            text-decoration: underline;
+            background: none;
+            border: none;
+            padding: 4px 0;
+        }
+
+        .modal-divider {
+            border: none;
+            border-top: 1px solid #eee;
+            margin: 12px 0;
+        }
+
+        .modal-update-bar {
+            background: #f0f4ff;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+            font-size: 0.82em;
+            color: #555;
         }
 
         .status-options {
@@ -1443,30 +1529,168 @@
         </div>
     </div>
 
-    <!-- モーダル：日付選択 -->
+    <!-- モーダル：実績記録詳細 -->
     <div id="dateModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <span id="modalDate"></span>の記録
+                実績記録詳細
+                <button class="modal-close" onclick="closeModal()">✕</button>
             </div>
 
-            <div class="form-group">
-                <label>サービス提供の状況</label>
-                <div class="status-options">
-                    <div class="status-option" data-status="○">○（本入居）</div>
-                    <div class="status-option" data-status="入院">入院</div>
-                    <div class="status-option" data-status="外泊">外泊</div>
-                    <div class="status-option" data-status="外泊始">外泊始</div>
-                    <div class="status-option" data-status="外泊終">外泊終</div>
-                    <div class="status-option" data-status="入院終">入院終</div>
-                    <div class="status-option" data-status="入院→外泊">入院→外泊</div>
-                    <div class="status-option" data-status="外泊→入院">外泊→入院</div>
-                    <div class="status-option" data-status="体験">体験</div>
+            <!-- 登録日 -->
+            <div class="modal-section">
+                <div class="modal-label">登録日</div>
+                <div class="modal-row">
+                    <input type="date" id="modalDateFrom" style="flex:1;">
+                    <span>〜</span>
+                    <input type="date" id="modalDateTo" style="flex:1;">
                 </div>
             </div>
 
-            <div style="margin-top: 20px;">
-                <button class="btn btn-primary" onclick="saveRecord()">保存</button>
+            <!-- 登録曜日 -->
+            <div class="modal-section">
+                <div class="modal-label">登録曜日</div>
+                <div class="modal-row" style="flex-wrap:wrap; gap:10px;">
+                    <label class="modal-checkbox-row"><input type="checkbox" class="modalDow" value="1"> 月</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" class="modalDow" value="2"> 火</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" class="modalDow" value="3"> 水</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" class="modalDow" value="4"> 木</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" class="modalDow" value="5"> 金</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" class="modalDow" value="6"> 土</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" class="modalDow" value="0"> 日</label>
+                </div>
+            </div>
+
+            <div class="modal-update-bar">
+                <label class="modal-checkbox-row">
+                    <input type="checkbox" id="modalOverwrite" checked>
+                    更新　登録期間で既に登録済みの場合、チェックを外すと上書きしません
+                </label>
+            </div>
+
+            <!-- サービス提供の状況 -->
+            <div class="modal-section">
+                <label class="modal-label"><input type="checkbox" id="modalEnableStatus" checked> サービス提供の状況</label>
+                <select id="modalStatus">
+                    <option value="">（選択してください）</option>
+                    <option value="○（本入居）">○(本入居)</option>
+                    <option value="入院始">入院始</option>
+                    <option value="入院">入院</option>
+                    <option value="入院終">入院終</option>
+                    <option value="外泊始">外泊始</option>
+                    <option value="外泊">外泊</option>
+                    <option value="外泊終">外泊終</option>
+                    <option value="入院→外泊">入院→外泊</option>
+                    <option value="外泊→入院">外泊→入院</option>
+                    <option value="入院→共同生活住居に戻る→外泊">入院→共同生活住居に戻る→外泊</option>
+                    <option value="外泊→共同生活住居に戻る→入院">外泊→共同生活住居に戻る→入院</option>
+                    <option value="体験">体験</option>
+                </select>
+            </div>
+
+            <!-- 夜間支援等体制加算 -->
+            <div class="modal-section">
+                <label class="modal-label"><input type="checkbox" id="modalEnableNight" checked> 夜間支援等体制加算</label>
+                <div class="modal-hint" id="modalNightHint"></div>
+                <select id="modalNightSupport">
+                    <option value="">（選択してください）</option>
+                </select>
+            </div>
+
+            <!-- その他の項目を表示 -->
+            <div style="margin: 12px 0;">
+                <button class="modal-collapse-btn" onclick="toggleModalExtra()">その他の項目を表示</button>
+            </div>
+
+            <div id="modalExtraItems" style="display:none;">
+                <!-- 入院時/帰宅時支援特別加算 -->
+                <div class="modal-section">
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalEnableInpatient" checked> <span></span></label>
+                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalInpatientSupport"> 入院時支援特別加算</label>
+                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalReturnSupport"> 帰宅時支援加算</label>
+                </div>
+
+                <!-- 日中支援加算 -->
+                <div class="modal-section">
+                    <label class="modal-label"><input type="checkbox" id="modalEnableDaytime" checked> 日中支援加算</label>
+                    <div class="modal-hint" id="modalDaytimeHint"></div>
+                    <select id="modalDaytimeSupport">
+                        <option value="">（選択してください）</option>
+                        <option value="日中支援加算（Ⅰ）1人">日中支援加算（Ⅰ）　1人</option>
+                        <option value="日中支援加算（Ⅰ）2人以上">日中支援加算（Ⅰ）　2人以上</option>
+                        <option value="日中支援加算（Ⅱ）1人 区分4・5・6">日中支援加算（Ⅱ）　1人　区分４、５、６</option>
+                        <option value="日中支援加算（Ⅱ）1人 区分3以下">日中支援加算（Ⅱ）　1人　区分３以下</option>
+                        <option value="日中支援加算（Ⅱ）2人以上 区分4・5・6">日中支援加算（Ⅱ）　2人以上　区分４、５、６</option>
+                        <option value="日中支援加算（Ⅱ）2人以上 区分3以下">日中支援加算（Ⅱ）　2人以上　区分３以下</option>
+                    </select>
+                </div>
+
+                <!-- 医療連携体制加算 -->
+                <div class="modal-section">
+                    <label class="modal-label"><input type="checkbox" id="modalEnableMedical" checked> 医療連携体制加算</label>
+                    <select id="modalMedicalCoop">
+                        <option value="">（選択してください）</option>
+                        <option value="医療連携体制加算（Ⅰ）">医療連携体制加算（Ⅰ）</option>
+                        <option value="医療連携体制加算（Ⅱ）">医療連携体制加算（Ⅱ）</option>
+                        <option value="医療連携体制加算（Ⅲ）">医療連携体制加算（Ⅲ）</option>
+                        <option value="医療連携体制加算（Ⅳ）">医療連携体制加算（Ⅳ）</option>
+                        <option value="医療連携体制加算（Ⅴ）">医療連携体制加算（Ⅴ）</option>
+                        <option value="医療連携体制加算（Ⅵ）">医療連携体制加算（Ⅵ）</option>
+                        <option value="医療連携体制加算（Ⅶ）">医療連携体制加算（Ⅶ）</option>
+                    </select>
+                </div>
+
+                <!-- 自立生活支援加算 -->
+                <div class="modal-section">
+                    <label class="modal-label"><input type="checkbox" id="modalEnableSelfSupport" checked> 自立生活支援加算</label>
+                    <select id="modalSelfSupport">
+                        <option value="">（選択してください）</option>
+                        <option value="自立生活支援加算（Ⅰ）">自立生活支援加算（Ⅰ）</option>
+                    </select>
+                </div>
+
+                <!-- 備考 -->
+                <div class="modal-section">
+                    <label class="modal-label"><input type="checkbox" id="modalEnableNote" checked> 備考</label>
+                    <input type="text" id="modalNote" placeholder="備考">
+                </div>
+
+                <hr class="modal-divider">
+
+                <!-- 長期入院時/帰宅時支援特別加算 -->
+                <div class="modal-section">
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalEnableLong" checked> <span></span></label>
+                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalLongInpatient"> 長期入院時支援特別加算</label>
+                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalLongReturn"> 長期帰宅時支援加算</label>
+                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalHomeCare"> 居宅介護等を利用する場合（長時間）</label>
+                </div>
+
+                <!-- 集中的支援加算 -->
+                <div class="modal-section">
+                    <label class="modal-label"><input type="checkbox" id="modalEnableIntensive" checked> 集中的支援加算</label>
+                    <select id="modalIntensive">
+                        <option value="">（選択してください）</option>
+                        <option value="集中的支援加算（Ⅰ）">集中的支援加算（Ⅰ）</option>
+                        <option value="集中的支援加算（Ⅱ）">集中的支援加算（Ⅱ）</option>
+                        <option value="集中的支援加算（Ⅰ）（Ⅱ）">集中的支援加算（Ⅰ）（Ⅱ）</option>
+                    </select>
+                </div>
+
+                <hr class="modal-divider">
+
+                <!-- その他の加算チェックボックス群 -->
+                <div class="modal-section">
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalEnableOther" checked> <span></span></label>
+                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalAfterLeave"> 退居後サービス提供</label>
+                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalPeerSupport"> ピアサポート実施加算</label>
+                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalAfterPeer"> 退去後ピアサポート実施加算</label>
+                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalInfection"> 新興感染症等施設療養加算</label>
+                </div>
+            </div>
+
+            <!-- 登録ボタン -->
+            <div style="margin-top:20px; display:flex; gap:10px;">
+                <button class="btn btn-primary" onclick="saveRecord()" style="background:#e91e8c; border-color:#e91e8c; flex:1;">登録</button>
                 <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
             </div>
         </div>
@@ -3043,14 +3267,19 @@
                 const record = getRecord(selectedUserId, dateStr);
                 
                 const statusClass = record ? getStatusClass(record.status) : '';
-                const statusText = record ? record.status : '';
+                const statusText = record ? (record.status || '') : '';
+                // 夜間支援加算の略称表示
+                let nightText = '';
+                if (record && record.nightSupport) {
+                    const m = record.nightSupport.match(/夜間支援等体制加算（(.+?)）(.+)?/);
+                    nightText = m ? `夜(${m[1]})` : '';
+                }
 
-                html += `
-                    <div class="calendar-day" onclick="openDateModal('${dateStr}')">
-                        <div class="day-number">${day}</div>
-                        ${statusText ? `<div class="day-status ${statusClass}">${statusText}</div>` : ''}
-                    </div>
-                `;
+                html += '<div class="calendar-day" onclick="openDateModal(\'' + dateStr + '\')">' +
+                    '<div class="day-number">' + day + '</div>' +
+                    (statusText ? '<div class="day-status ' + statusClass + '">' + statusText + '</div>' : '') +
+                    (nightText ? '<div style="font-size:0.65em; color:#667eea; margin-top:2px;">' + nightText + '</div>' : '') +
+                    '</div>';
             }
 
             html += '</div>';
@@ -3143,15 +3372,90 @@
             }
 
             selectedDate = dateStr;
-            document.getElementById('modalDate').textContent = dateStr;
-            
+
+            // 登録日を選択した日付に初期設定
+            document.getElementById('modalDateFrom').value = dateStr;
+            document.getElementById('modalDateTo').value = dateStr;
+
+            // 曜日チェックをリセット
+            document.querySelectorAll('.modalDow').forEach(cb => cb.checked = false);
+
+            // 上書きチェック
+            document.getElementById('modalOverwrite').checked = true;
+
+            // 夜間支援等体制加算：建物設定から選択肢を生成
+            const user = users.find(u => u.id === selectedUserId);
+            const building = user ? buildings.find(b => b.id === user.unit) : null;
+            const nightSelect = document.getElementById('modalNightSupport');
+            const nightHint = document.getElementById('modalNightHint');
+            nightSelect.innerHTML = '<option value="">（選択してください）</option>';
+            if (building && building.nightSupportType) {
+                // 建物設定値を先頭に表示
+                const opt = document.createElement('option');
+                opt.value = building.nightSupportType;
+                opt.textContent = building.nightSupportType;
+                nightSelect.appendChild(opt);
+                nightHint.textContent = '建物設定：' + building.nightSupportType;
+            } else {
+                nightHint.textContent = '建物設定なし';
+            }
+            // 事業所の夜間支援設定も追加
+            if (facility.nightSupportType1) {
+                const opt = document.createElement('option');
+                opt.value = facility.nightSupportType1;
+                opt.textContent = facility.nightSupportType1;
+                nightSelect.appendChild(opt);
+            }
+            if (facility.nightSupportType3) {
+                const opt = document.createElement('option');
+                opt.value = facility.nightSupportType3;
+                opt.textContent = facility.nightSupportType3;
+                nightSelect.appendChild(opt);
+            }
+
+            // 日中支援加算ヒント
+            const daytimeHint = document.getElementById('modalDaytimeHint');
+            if (facility.daySupport) {
+                daytimeHint.textContent = '事業所設定：' + facility.daySupport;
+            } else {
+                daytimeHint.textContent = '';
+            }
+
+            // 既存記録があれば読み込む
             const record = getRecord(selectedUserId, dateStr);
-            document.querySelectorAll('.status-option').forEach(opt => {
-                opt.classList.remove('selected');
-                if (record && opt.dataset.status === record.status) {
-                    opt.classList.add('selected');
-                }
-            });
+            if (record) {
+                document.getElementById('modalStatus').value = record.status || '';
+                document.getElementById('modalNightSupport').value = record.nightSupport || '';
+                document.getElementById('modalDaytimeSupport').value = record.daytimeSupport || '';
+                document.getElementById('modalMedicalCoop').value = record.medicalCoop || '';
+                document.getElementById('modalSelfSupport').value = record.selfSupport || '';
+                document.getElementById('modalNote').value = record.note || '';
+                document.getElementById('modalInpatientSupport').checked = !!record.inpatientSupport;
+                document.getElementById('modalReturnSupport').checked = !!record.returnSupport;
+                document.getElementById('modalLongInpatient').checked = !!record.longInpatient;
+                document.getElementById('modalLongReturn').checked = !!record.longReturn;
+                document.getElementById('modalHomeCare').checked = !!record.homeCare;
+                document.getElementById('modalIntensive').value = record.intensive || '';
+                document.getElementById('modalAfterLeave').checked = !!record.afterLeave;
+                document.getElementById('modalPeerSupport').checked = !!record.peerSupport;
+                document.getElementById('modalAfterPeer').checked = !!record.afterPeer;
+                document.getElementById('modalInfection').checked = !!record.infection;
+            } else {
+                // デフォルト値クリア
+                ['modalStatus','modalNightSupport','modalDaytimeSupport','modalMedicalCoop','modalSelfSupport','modalNote','modalIntensive'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                ['modalInpatientSupport','modalReturnSupport','modalLongInpatient','modalLongReturn','modalHomeCare','modalAfterLeave','modalPeerSupport','modalAfterPeer','modalInfection'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.checked = false;
+                });
+            }
+
+            // その他項目は隠す
+            document.getElementById('modalExtraItems').style.display = 'none';
+            const collapseBtn = document.querySelector('.modal-collapse-btn');
+            if (collapseBtn) collapseBtn.textContent = 'その他の項目を表示';
 
             document.getElementById('dateModal').classList.add('active');
         }
@@ -3160,34 +3464,63 @@
             document.getElementById('dateModal').classList.remove('active');
         }
 
-        document.querySelectorAll('.status-option').forEach(option => {
-            option.addEventListener('click', function() {
-                document.querySelectorAll('.status-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                this.classList.add('selected');
-            });
-        });
-
         function saveRecord() {
-            const selected = document.querySelector('.status-option.selected');
-            if (!selected) {
-                alert('ステータスを選択してください');
+            if (!selectedUserId) return;
+
+            const dateFrom = document.getElementById('modalDateFrom').value;
+            const dateTo = document.getElementById('modalDateTo').value;
+            const overwrite = document.getElementById('modalOverwrite').checked;
+
+            if (!dateFrom || !dateTo) {
+                alert('登録日を入力してください');
                 return;
             }
 
-            if (!records[selectedUserId]) {
-                records[selectedUserId] = {};
-            }
+            // 登録曜日の取得（チェックされていない場合は全曜日）
+            const checkedDows = [...document.querySelectorAll('.modalDow:checked')].map(cb => parseInt(cb.value));
 
-            records[selectedUserId][selectedDate] = {
-                status: selected.dataset.status,
-                date: selectedDate
+            const recordData = {
+                status: document.getElementById('modalEnableStatus').checked ? document.getElementById('modalStatus').value : '',
+                nightSupport: document.getElementById('modalEnableNight').checked ? document.getElementById('modalNightSupport').value : '',
+                daytimeSupport: document.getElementById('modalEnableDaytime').checked ? document.getElementById('modalDaytimeSupport').value : '',
+                medicalCoop: document.getElementById('modalEnableMedical').checked ? document.getElementById('modalMedicalCoop').value : '',
+                selfSupport: document.getElementById('modalEnableSelfSupport').checked ? document.getElementById('modalSelfSupport').value : '',
+                note: document.getElementById('modalEnableNote').checked ? document.getElementById('modalNote').value : '',
+                inpatientSupport: document.getElementById('modalInpatientSupport').checked,
+                returnSupport: document.getElementById('modalReturnSupport').checked,
+                longInpatient: document.getElementById('modalLongInpatient').checked,
+                longReturn: document.getElementById('modalLongReturn').checked,
+                homeCare: document.getElementById('modalHomeCare').checked,
+                intensive: document.getElementById('modalEnableIntensive').checked ? document.getElementById('modalIntensive').value : '',
+                afterLeave: document.getElementById('modalAfterLeave').checked,
+                peerSupport: document.getElementById('modalPeerSupport').checked,
+                afterPeer: document.getElementById('modalAfterPeer').checked,
+                infection: document.getElementById('modalInfection').checked
             };
+
+            if (!records[selectedUserId]) records[selectedUserId] = {};
+
+            // 登録期間をループして保存
+            let d = new Date(dateFrom);
+            const end = new Date(dateTo);
+            let count = 0;
+            while (d <= end) {
+                const dow = d.getDay();
+                const skip = checkedDows.length > 0 && !checkedDows.includes(dow);
+                if (!skip) {
+                    const dateStr = d.toISOString().slice(0, 10);
+                    if (overwrite || !records[selectedUserId][dateStr]) {
+                        records[selectedUserId][dateStr] = { ...recordData, date: dateStr };
+                        count++;
+                    }
+                }
+                d.setDate(d.getDate() + 1);
+            }
 
             localStorage.setItem('gh_records', JSON.stringify(records));
             updateCalendar();
             closeModal();
+            alert(`✅ ${count}件の記録を登録しました`);
         }
 
         // ========== CSV出力 ==========
