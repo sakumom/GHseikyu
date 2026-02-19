@@ -1599,15 +1599,14 @@
 
             <!-- その他の項目を表示 -->
             <div style="margin: 12px 0;">
-                <button class="modal-collapse-btn" onclick="toggleModalExtra()">その他の項目を表示</button>
+                <a href="#" class="modal-collapse-btn" onclick="toggleModalExtra(); return false;">その他の項目を表示</a>
             </div>
 
             <div id="modalExtraItems" style="display:none;">
                 <!-- 入院時/帰宅時支援特別加算 -->
                 <div class="modal-section">
-                    <label class="modal-checkbox-row"><input type="checkbox" id="modalEnableInpatient" checked> <span></span></label>
-                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalInpatientSupport"> 入院時支援特別加算</label>
-                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalReturnSupport"> 帰宅時支援加算</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalInpatientSupport"> 入院時支援特別加算</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalReturnSupport"> 帰宅時支援加算</label>
                 </div>
 
                 <!-- 日中支援加算 -->
@@ -1659,10 +1658,9 @@
 
                 <!-- 長期入院時/帰宅時支援特別加算 -->
                 <div class="modal-section">
-                    <label class="modal-checkbox-row"><input type="checkbox" id="modalEnableLong" checked> <span></span></label>
-                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalLongInpatient"> 長期入院時支援特別加算</label>
-                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalLongReturn"> 長期帰宅時支援加算</label>
-                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalHomeCare"> 居宅介護等を利用する場合（長時間）</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalLongInpatient"> 長期入院時支援特別加算</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalLongReturn"> 長期帰宅時支援加算</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalHomeCare"> 居宅介護等を利用する場合（長時間）</label>
                 </div>
 
                 <!-- 集中的支援加算 -->
@@ -1680,18 +1678,18 @@
 
                 <!-- その他の加算チェックボックス群 -->
                 <div class="modal-section">
-                    <label class="modal-checkbox-row"><input type="checkbox" id="modalEnableOther" checked> <span></span></label>
-                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalAfterLeave"> 退居後サービス提供</label>
-                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalPeerSupport"> ピアサポート実施加算</label>
-                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalAfterPeer"> 退去後ピアサポート実施加算</label>
-                    <label class="modal-checkbox-row" style="margin-left:8px;"><input type="checkbox" id="modalInfection"> 新興感染症等施設療養加算</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalAfterLeave"> 退居後サービス提供</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalPeerSupport"> ピアサポート実施加算</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalAfterPeer"> 退去後ピアサポート実施加算</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalInfection"> 新興感染症等施設療養加算</label>
+                    <label class="modal-checkbox-row"><input type="checkbox" id="modalStaffArrangement"> 人員配置体制加算</label>
                 </div>
             </div>
 
-            <!-- 登録ボタン -->
-            <div style="margin-top:20px; display:flex; gap:10px;">
-                <button class="btn btn-primary" onclick="saveRecord()" style="background:#e91e8c; border-color:#e91e8c; flex:1;">登録</button>
-                <button class="btn btn-secondary" onclick="closeModal()">キャンセル</button>
+            <!-- ボタン -->
+            <div style="margin-top:20px; display:flex; gap:10px; position:sticky; bottom:0; background:white; padding-top:12px; border-top:1px solid #eee;">
+                <button class="btn btn-primary" onclick="saveRecord()" style="background:#e91e8c; border-color:#e91e8c; flex:1;">保存する</button>
+                <button class="btn btn-secondary" onclick="closeModal()">閉じる</button>
             </div>
         </div>
     </div>
@@ -3440,13 +3438,14 @@
                 document.getElementById('modalPeerSupport').checked = !!record.peerSupport;
                 document.getElementById('modalAfterPeer').checked = !!record.afterPeer;
                 document.getElementById('modalInfection').checked = !!record.infection;
+                document.getElementById('modalStaffArrangement').checked = !!record.staffArrangement;
             } else {
                 // デフォルト値クリア
                 ['modalStatus','modalNightSupport','modalDaytimeSupport','modalMedicalCoop','modalSelfSupport','modalNote','modalIntensive'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.value = '';
                 });
-                ['modalInpatientSupport','modalReturnSupport','modalLongInpatient','modalLongReturn','modalHomeCare','modalAfterLeave','modalPeerSupport','modalAfterPeer','modalInfection'].forEach(id => {
+                ['modalInpatientSupport','modalReturnSupport','modalLongInpatient','modalLongReturn','modalHomeCare','modalAfterLeave','modalPeerSupport','modalAfterPeer','modalInfection','modalStaffArrangement'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.checked = false;
                 });
@@ -3458,6 +3457,18 @@
             if (collapseBtn) collapseBtn.textContent = 'その他の項目を表示';
 
             document.getElementById('dateModal').classList.add('active');
+        }
+
+        function toggleModalExtra() {
+            const el = document.getElementById('modalExtraItems');
+            const btn = document.querySelector('.modal-collapse-btn');
+            if (el.style.display === 'none' || el.style.display === '') {
+                el.style.display = 'block';
+                if (btn) btn.textContent = 'その他の項目を隠す';
+            } else {
+                el.style.display = 'none';
+                if (btn) btn.textContent = 'その他の項目を表示';
+            }
         }
 
         function closeModal() {
@@ -3495,7 +3506,8 @@
                 afterLeave: document.getElementById('modalAfterLeave').checked,
                 peerSupport: document.getElementById('modalPeerSupport').checked,
                 afterPeer: document.getElementById('modalAfterPeer').checked,
-                infection: document.getElementById('modalInfection').checked
+                infection: document.getElementById('modalInfection').checked,
+                staffArrangement: document.getElementById('modalStaffArrangement').checked
             };
 
             if (!records[selectedUserId]) records[selectedUserId] = {};
