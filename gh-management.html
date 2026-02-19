@@ -1515,21 +1515,48 @@
             <div id="export" class="tab-content">
                 <h2 class="section-header">請求データ出力</h2>
 
-                <!-- 対象年月・利用者選択 -->
-                <div style="display:flex; gap:16px; align-items:flex-end; flex-wrap:wrap; margin-bottom:20px;">
+                <!-- パンくず -->
+                <div style="font-size:0.85em; color:#888; margin-bottom:12px;">
+                    <span style="color:#667eea;">ホーム</span> / 請求
+                </div>
+
+                <!-- 事業所・サービス提供年月 -->
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:12px;">
                     <div>
-                        <label style="font-size:0.85em; color:#555; display:block; margin-bottom:4px;">対象年月</label>
-                        <input type="month" id="exportMonth" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
+                        <label style="font-size:0.85em; color:#555; display:block; margin-bottom:4px;">事業所</label>
+                        <div id="exportFacilityName" style="padding:10px 14px; border:1px solid #ddd; border-radius:6px; background:#f9f9f9; font-size:0.95em;"></div>
                     </div>
                     <div>
-                        <label style="font-size:0.85em; color:#555; display:block; margin-bottom:4px;">印刷日</label>
-                        <input type="date" id="exportPrintDate" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
-                    </div>
-                    <div>
-                        <label style="font-size:0.85em; color:#555; display:block; margin-bottom:4px;">受領日（代理受領通知票用）</label>
-                        <input type="date" id="exportReceiveDate" style="padding:8px 12px; border:1px solid #ddd; border-radius:6px;">
+                        <label style="font-size:0.85em; color:#555; display:block; margin-bottom:4px;">サービス提供年月</label>
+                        <select id="exportMonthSelect" onchange="onExportMonthChange()" style="width:100%; padding:10px 14px; border:1px solid #ddd; border-radius:6px; background:white;">
+                        </select>
                     </div>
                 </div>
+
+                <!-- 確定ボタンエリア -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding:10px 0; border-top:1px solid #eee; border-bottom:1px solid #eee;">
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <button id="btnConfirm" onclick="toggleConfirm()" style="padding:8px 20px; border-radius:6px; border:none; cursor:pointer; font-size:0.9em; font-weight:600; background:#e91e8c; color:white;">確定</button>
+                        <span id="confirmStatusLabel" style="font-size:0.85em; color:#888;"></span>
+                    </div>
+                    <a href="#" onclick="showConfirmHistory(); return false;" style="font-size:0.85em; color:#667eea;">確定履歴画面へ</a>
+                </div>
+
+                <div id="confirmHistoryPanel" style="display:none; background:#f9f9f9; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <strong style="font-size:0.9em;">確定履歴</strong>
+                        <button onclick="document.getElementById('confirmHistoryPanel').style.display='none'" style="background:none; border:none; cursor:pointer; color:#888; font-size:1.1em;">✕</button>
+                    </div>
+                    <div id="confirmHistoryList" style="font-size:0.85em;"></div>
+                </div>
+
+                <!-- 利用者詳細を表示リンク -->
+                <div style="margin-bottom:20px;">
+                    <a href="#" onclick="showTab2('users'); return false;" style="font-size:0.85em; color:#667eea;">利用者詳細を表示</a>
+                </div>
+
+                <!-- 対象年月（hidden、旧互換用） -->
+                <input type="hidden" id="exportMonth">
 
                 <!-- 利用者選択 -->
                 <div style="background:#f9f9f9; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:20px;">
@@ -1829,18 +1856,7 @@
             document.getElementById(tabName).classList.add('active');
 
             if (tabName === 'export') {
-                renderExportUserList();
-                // 今月を初期値に
-                const today = new Date();
-                const m = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0');
-                if (!document.getElementById('exportMonth').value) {
-                    document.getElementById('exportMonth').value = m;
-                }
-                const todayStr = today.toISOString().slice(0,10);
-                ['exportPrintDate','exportPrintDate2','exportPrintDate3','exportPrintDate4'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el && !el.value) el.value = todayStr;
-                });
+                initExportTab();
             }
         }
 
@@ -3670,6 +3686,122 @@
         }
 
         // ===== 請求データ出力 =====
+        // ===== 請求確定管理 =====
+        let exportConfirmations = JSON.parse(localStorage.getItem('gh_confirmations') || '{}');
+
+        function initExportTab() {
+            // 事業所名表示
+            const facEl = document.getElementById('exportFacilityName');
+            if (facEl) facEl.textContent = facility.facilityName || 'Tokyo. settle';
+
+            // サービス提供年月のセレクト（過去24ヶ月＋今後3ヶ月）
+            const sel = document.getElementById('exportMonthSelect');
+            if (sel) {
+                sel.innerHTML = '';
+                const today = new Date();
+                for (let i = -3; i <= 24; i++) {
+                    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                    const val = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+                    const label = d.getFullYear() + '年' + (d.getMonth()+1) + '月';
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.textContent = label;
+                    if (i === 0) opt.selected = true;
+                    sel.appendChild(opt);
+                }
+            }
+            onExportMonthChange();
+
+            // 印刷日初期値
+            const todayStr = new Date().toISOString().slice(0,10);
+            ['exportPrintDate','exportPrintDate2','exportPrintDate3','exportPrintDate4'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el && !el.value) el.value = todayStr;
+            });
+
+            renderExportUserList();
+        }
+
+        function onExportMonthChange() {
+            const sel = document.getElementById('exportMonthSelect');
+            const val = sel ? sel.value : '';
+            // 旧互換用の hidden input にも同期
+            const hidden = document.getElementById('exportMonth');
+            if (hidden) hidden.value = val;
+            updateConfirmStatus(val);
+        }
+
+        function updateConfirmStatus(monthVal) {
+            const btn = document.getElementById('btnConfirm');
+            const label = document.getElementById('confirmStatusLabel');
+            if (!btn || !label) return;
+            if (exportConfirmations[monthVal]) {
+                btn.textContent = '確定解除';
+                btn.style.background = '#e91e8c';
+                const c = exportConfirmations[monthVal];
+                label.textContent = '確定済み：' + new Date(c.confirmedAt).toLocaleString('ja-JP') + '　' + (c.confirmedBy || '');
+            } else {
+                btn.textContent = '確定';
+                btn.style.background = '#667eea';
+                label.textContent = '';
+            }
+        }
+
+        function toggleConfirm() {
+            const sel = document.getElementById('exportMonthSelect');
+            const monthVal = sel ? sel.value : document.getElementById('exportMonth').value;
+            if (!monthVal) { alert('対象年月を選択してください'); return; }
+            const [y, m] = monthVal.split('-');
+            const label = y + '年' + parseInt(m) + '月';
+
+            if (exportConfirmations[monthVal]) {
+                if (!confirm(label + ' の確定を解除しますか？')) return;
+                delete exportConfirmations[monthVal];
+                alert('✅ ' + label + ' の確定を解除しました');
+            } else {
+                if (!confirm(label + ' の請求データを確定しますか？\n\n確定後もデータの修正は可能ですが、再度確定が必要になります。')) return;
+                exportConfirmations[monthVal] = {
+                    confirmedAt: new Date().toISOString(),
+                    confirmedBy: facility.facilityName || ''
+                };
+                alert('✅ ' + label + ' を確定しました');
+            }
+            localStorage.setItem('gh_confirmations', JSON.stringify(exportConfirmations));
+            updateConfirmStatus(monthVal);
+        }
+
+        function showConfirmHistory() {
+            const panel = document.getElementById('confirmHistoryPanel');
+            const list = document.getElementById('confirmHistoryList');
+            if (!panel || !list) return;
+            panel.style.display = panel.style.display === 'none' ? '' : 'none';
+            const keys = Object.keys(exportConfirmations).sort().reverse();
+            if (keys.length === 0) {
+                list.innerHTML = '<p style="color:#aaa;">確定履歴はありません</p>';
+                return;
+            }
+            list.innerHTML = '<table style="width:100%; border-collapse:collapse;">' +
+                '<tr style="border-bottom:1px solid #ddd;"><th style="text-align:left; padding:6px;">年月</th><th style="text-align:left; padding:6px;">確定日時</th></tr>' +
+                keys.map(k => {
+                    const [y, m] = k.split('-');
+                    const c = exportConfirmations[k];
+                    return '<tr style="border-bottom:1px solid #eee;">' +
+                        '<td style="padding:6px;">' + y + '年' + parseInt(m) + '月</td>' +
+                        '<td style="padding:6px;">' + new Date(c.confirmedAt).toLocaleString('ja-JP') + '</td>' +
+                        '</tr>';
+                }).join('') +
+                '</table>';
+        }
+
+        function showTab2(name) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            const tabBtn = document.querySelector('.tab[onclick*="' + name + '"]');
+            if (tabBtn) tabBtn.classList.add('active');
+            const tabContent = document.getElementById(name);
+            if (tabContent) tabContent.classList.add('active');
+        }
+
         function renderExportUserList() {
             const div = document.getElementById('exportUserList');
             if (!div) return;
