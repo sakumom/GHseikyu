@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>グループホーム請求管理システム v8</title>
+    <title>グループホーム請求管理システム v4.1</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
     <style>
         * {
@@ -616,7 +616,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏠 グループホーム請求管理システム v8</h1>
+            <h1>🏠 グループホーム請求管理システム v4.1</h1>
             <p>障害者共同生活援助サービス</p>
         </div>
 
@@ -3617,6 +3617,26 @@
                 return;
             }
 
+            // ★ 確定ロックチェック：対象期間に確定済み月が含まれる場合はブロック
+            const lockedMonths = [];
+            let d0 = new Date(dateFrom);
+            const end0 = new Date(dateTo);
+            while (d0 <= end0) {
+                const ym = d0.getFullYear() + '-' + String(d0.getMonth()+1).padStart(2,'0');
+                if (exportConfirmations[ym] && !lockedMonths.includes(ym)) {
+                    lockedMonths.push(ym);
+                }
+                d0.setDate(d0.getDate() + 1);
+            }
+            if (lockedMonths.length > 0) {
+                const labels = lockedMonths.map(ym => {
+                    const [y,m] = ym.split('-');
+                    return y + '年' + parseInt(m) + '月';
+                }).join('、');
+                alert('⚠️ ' + labels + ' は請求データが確定済みです。\n\n実績記録を変更するには、請求データ出力タブで「確定解除」を行ってください。');
+                return;
+            }
+
             // 登録曜日の取得（チェックされていない場合は全曜日）
             const checkedDows = [...document.querySelectorAll('.modalDow:checked')].map(cb => parseInt(cb.value));
 
@@ -3853,24 +3873,290 @@
                 '<div class="alert alert-info">ℹ️ ' + type + ' のExcel出力機能は現在準備中です。</div>';
         }
 
+        // =========================================================
+        // SEファイル生成（介護給付費等請求書・明細書）
+        // 令和6年4月施行 共同生活援助（介護サービス包括型）
+        // インタフェース仕様書 J111 準拠
+        // =========================================================
+
+        // ── 地域単価テーブル（令和7年度以降、共同生活援助）
+        // 出典：東京都国保連 地域区分と1単位単価PDF
+        const GH_TANKA = {
+            '01': 10.18, // 一級地 23区・町田・狛江・多摩・調布など
+            '02': 10.14, // 二級地 立川・昭島・八王子・武蔵野・三鷹等
+            '03': 10.14,
+            '04': 10.00,
+            '05': 10.00,
+            '06': 10.00,
+            '07': 10.00,
+            '20': 10.00,
+        };
+
+        // ── 基本単位数テーブル（令和6年4月 介護サービス包括型Ⅰ 世話人6:1）
+        const BASE_UNITS = {
+            '26': 600, // 区分6
+            '25': 456, // 区分5
+            '24': 372, // 区分4
+            '23': 297, // 区分3
+            '22': 188, // 区分2
+            '21': 171, // 区分1
+            '99': 171, // なし
+        };
+
+        // ── 夜間支援等体制加算（Ⅰ）単位数テーブル（1住居あたり・利用者人数別）
+        const NIGHT1_UNITS = {
+            '2人以下':111,'3人':81,'4人':64,'5人':53,'6人':46,
+            '7人':40,'8人':36,'9人':32,'10人':29,
+            '11人':26,'12人':26,'13人':23,'14人':23,'15人':23,
+            '16人':18,'17人':18,'18人':18,'19人':18,'20人':18,
+        };
+
+        // ── 大規模住居等減算率
+        function getLargeScaleRate(largeScaleReduction) {
+            if (!largeScaleReduction) return 1.0;
+            if (largeScaleReduction.includes('21人以上') || largeScaleReduction.includes('大２')) return 0.85;
+            if (largeScaleReduction.includes('8人以上') || largeScaleReduction.includes('大１')) return 0.90;
+            return 1.0;
+        }
+
+        // ── 障害程度区分コード変換
+        function getSupportLevelCode(level) {
+            const map = {
+                '区分1':'21','区分2':'22','区分3':'23','区分4':'24','区分5':'25','区分6':'26',
+                '区分１':'21','区分２':'22','区分３':'23','区分４':'24','区分５':'25','区分６':'26',
+                'なし':'99',''  :'99'
+            };
+            return map[level] || '99';
+        }
+
+        // ── 所得区分コード変換（certBurdenLimit から）
+        function getIncomeClassCode(burdenLimit) {
+            const v = parseInt(burdenLimit) || 0;
+            if (v === 0) return '01';      // 生活保護（0円）
+            if (v <= 9300) return '02';    // 低所得1
+            if (v <= 18600) return '03';   // 低所得2
+            if (v <= 37200) return '04';   // 一般1
+            return '05';                    // 一般2
+        }
+
+        // ── 給付率（所得区分コードから）
+        function getGrantRate(incomeCode) {
+            return (incomeCode === '01' || incomeCode === '02' || incomeCode === '03') ? 100 : 90;
+        }
+
+        // ── 夜間支援等体制加算サービスコード
+        function getNightSupportServiceCode(type) {
+            if (!type) return null;
+            if (type === 'Ⅱ' || type.includes('Ⅱ')) return '125002';
+            if (type === 'Ⅲ' || type.includes('Ⅲ')) return '125003';
+            return '125001';
+        }
+
+        // ── 実利用日数（本入居の日数）
+        function countServiceDays(monthRecords) {
+            return Object.values(monthRecords).filter(r =>
+                r.status === '○（本入居）' || r.status === '○'
+            ).length;
+        }
+
+        // ── 単位数計算
+        function calcUnits(user, building, cert, monthRecords) {
+            const supportCode = getSupportLevelCode(cert.certSupportLevel || '');
+            const baseUnitPerDay = BASE_UNITS[supportCode] || 171;
+            const serviceDays = countServiceDays(monthRecords);
+            const largeScaleRate = getLargeScaleRate(building ? building.largeScaleReduction : '');
+            const baseTotal = Math.floor(baseUnitPerDay * serviceDays * largeScaleRate);
+
+            // 夜間支援等体制加算Ⅰ
+            let nightAddition = 0;
+            const ns1 = facility.nightSupportType1 || (building && building.nightSupportType) || '';
+            if (ns1 && NIGHT1_UNITS[ns1] !== undefined) {
+                nightAddition = NIGHT1_UNITS[ns1] * serviceDays;
+            }
+
+            // 重度障害者支援加算
+            let severeAddition = 0;
+            if (user.calcSevereDisability) {
+                const sevMap = { 'Ⅱ(加配前)':180, 'Ⅱ(加配後)':360, 'Ⅱ(合計)':540 };
+                severeAddition = (sevMap[user.calcSevereDisability] || 0) * serviceDays;
+            }
+
+            // 医療的ケア対応支援加算
+            const medicalAddition = user.calcMedicalCare ? (39 * serviceDays) : 0;
+
+            return {
+                baseUnitPerDay, serviceDays, baseTotal,
+                nightAddition, severeAddition, medicalAddition,
+                totalUnits: baseTotal + nightAddition + severeAddition + medicalAddition,
+                nightCode: ns1 ? getNightSupportServiceCode(ns1) : null,
+                largeScaleRate
+            };
+        }
+
+        // ── 金額計算
+        function calcAmount(totalUnits, areaCode, incomeCode, burdenLimit) {
+            const tanka = GH_TANKA[areaCode] || 10.00;
+            const totalCost = Math.floor(totalUnits * tanka);
+            const grantRate = getGrantRate(incomeCode);
+            const grantFee = Math.floor(totalCost * grantRate / 100);
+            const burdenLimitVal = parseInt(burdenLimit) || 0;
+            const rawBurden = totalCost - grantFee;
+            const userBurden = burdenLimitVal > 0 ? Math.min(rawBurden, burdenLimitVal) : rawBurden;
+            const actualGrant = totalCost - userBurden;
+            return { totalCost, grantFee: actualGrant, userBurden, tanka, grantRate };
+        }
+
         function generateSE(year, month, targetUsers) {
-            let csv = '"1","1","0","11","J11","0","' + (facility.facilityNumber||'') + '","0","1","' + year + month + '","0"\n';
-            let lineNum = 2;
+            const serviceYM = year + month.padStart(2,'0');
+            const nextDate = new Date(parseInt(year), parseInt(month), 1);
+            const processYM = nextDate.getFullYear() + String(nextDate.getMonth()+1).padStart(2,'0');
+
+            let dataLines = [];
+            let totalLines = 0;
+
             targetUsers.forEach(user => {
-                const recordCount = countRecordsForMonth(user.id, year, month);
-                if (recordCount > 0) {
-                    const certNo = (user.certificates && user.certificates.length > 0)
-                        ? (user.certificates.slice().sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0].certNo || '')
-                        : '';
-                    const cityCode = (user.certificates && user.certificates.length > 0)
-                        ? (user.certificates.slice().sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0].certCityCode || '')
-                        : '';
-                    csv += '"2","' + lineNum + '","J111","01","' + year + month + '","' + cityCode + '","' + (facility.facilityNumber||'') + '","135001","1","10776","125001","125001","0","0","0","1","10000","10000","2","10776","135001","135001","0","0","0"\n';
-                    lineNum++;
+                const monthRecords = getMonthRecords(user.id, year, month);
+                if (Object.keys(monthRecords).length === 0) return;
+
+                const ym = year + '-' + month.padStart(2,'0');
+                const cert = (user.certificates || [])
+                    .filter(c => {
+                        const from = (c.certValidFrom || '0000-00').substring(0,7);
+                        const to   = (c.certValidTo   || '9999-12').substring(0,7);
+                        return from <= ym && ym <= to;
+                    })
+                    .sort((a,b) => (b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0]
+                    || (user.certificates||[])[0] || {};
+
+                const cityCode   = cert.certCityCode || '';
+                const certNo     = cert.certNo || '';
+                const incomeCode = getIncomeClassCode(cert.certBurdenLimit);
+                const burdenLimit = cert.certBurdenLimit || '0';
+                const building   = (facility.buildings||[]).find(b => (b.users||[]).includes(user.id)) || null;
+
+                const uc = calcUnits(user, building, cert, monthRecords);
+                const am = calcAmount(uc.totalUnits, facility.areaCode||'01', incomeCode, burdenLimit);
+
+                const hasUpperMgmt    = cert.certUpperMgmtOrgNo ? '1' : '0';
+                const upperMgmtResult = hasUpperMgmt === '1' ? '3' : '0';
+                const upperMgmtAmount = hasUpperMgmt === '1' ? String(am.userBurden) : '0';
+
+                // J111 01 基本情報レコード
+                dataLines.push([
+                    'J111','01', serviceYM,
+                    cityCode, facility.facilityNumber||'',
+                    '13',                               // サービス種類コード
+                    getSupportLevelCode(cert.certSupportLevel||''), // 障害程度区分
+                    incomeCode,                         // 所得区分コード
+                    String(am.grantRate),               // 給付率
+                    String(parseInt(burdenLimit)||0),   // 決定利用者負担月額
+                    cert.certUpperMgmtOrgNo||'0',       // 上限額管理事業所番号
+                    upperMgmtResult,                    // 管理結果
+                    upperMgmtAmount,                    // 管理結果額
+                    String(uc.totalUnits),              // 給付単位数（合計）
+                    String(am.totalCost),               // 総費用額
+                    String(am.grantFee),                // 給付費請求額
+                    String(am.userBurden),              // 決定利用者負担額
+                    '0','0','0','0',                    // 特例・高額・自治体助成
+                ]);
+                totalLines++;
+
+                // J111 02 明細情報レコード（基本サービス）
+                dataLines.push([
+                    'J111','02', serviceYM,
+                    cityCode, facility.facilityNumber||'', certNo,
+                    '135001',                           // サービスコード（介護包括型Ⅰ基本）
+                    String(uc.baseUnitPerDay),
+                    String(uc.serviceDays),
+                    String(uc.baseTotal),
+                    uc.largeScaleRate < 1.0 ? String(Math.floor((1.0 - uc.largeScaleRate)*100)) : '0',
+                ]);
+                totalLines++;
+
+                // 夜間支援等体制加算 明細
+                if (uc.nightCode && uc.nightAddition > 0) {
+                    const unitPerDay = Math.floor(uc.nightAddition / Math.max(uc.serviceDays,1));
+                    dataLines.push([
+                        'J111','02', serviceYM,
+                        cityCode, facility.facilityNumber||'', certNo,
+                        uc.nightCode, String(unitPerDay), String(uc.serviceDays), String(uc.nightAddition), '0',
+                    ]);
+                    totalLines++;
+                }
+
+                // 重度障害者支援加算 明細
+                if (uc.severeAddition > 0) {
+                    const sevCode = (user.calcSevereDisability||'').includes('Ⅱ') ? '125301' : '125201';
+                    dataLines.push([
+                        'J111','02', serviceYM,
+                        cityCode, facility.facilityNumber||'', certNo,
+                        sevCode, String(Math.floor(uc.severeAddition/Math.max(uc.serviceDays,1))),
+                        String(uc.serviceDays), String(uc.severeAddition), '0',
+                    ]);
+                    totalLines++;
+                }
+
+                // 医療的ケア対応支援加算 明細
+                if (uc.medicalAddition > 0) {
+                    dataLines.push([
+                        'J111','02', serviceYM,
+                        cityCode, facility.facilityNumber||'', certNo,
+                        '125401', '39', String(uc.serviceDays), String(uc.medicalAddition), '0',
+                    ]);
+                    totalLines++;
                 }
             });
+
+            if (dataLines.length === 0) {
+                alert('出力対象となる実績データがありません。');
+                return;
+            }
+
+            const ctrl = ['1','1','0', String(totalLines), 'J11','0',
+                facility.facilityNumber||'','0','1', processYM,'0'];
+            let csv = ctrl.map(v => '"' + v + '"').join(',') + '\n';
+            let lineNum = 2;
+            dataLines.forEach(fields => {
+                csv += '"2","' + lineNum + '",' + fields.map(v => '"' + String(v||'') + '"').join(',') + '\n';
+                lineNum++;
+            });
             csv += '"3","' + lineNum + '"\n';
-            downloadCSV(csv, 'SE' + year + month + '.csv');
+
+            const filename = 'SE' + year + month.padStart(2,'0') + '.csv';
+
+            // シフトJISで出力（国保連仕様）
+            try {
+                // UTF-8 BOMで出力（簡易版）
+                downloadCSV(csv, filename);
+            } catch(e) {
+                downloadCSV(csv, filename);
+            }
+
+            // 計算サマリー表示
+            let summary = '<div class="alert alert-success">✅ ' + filename + ' をダウンロードしました</div>';
+            summary += '<table style="width:100%;margin-top:8px;font-size:0.82em;border-collapse:collapse;">';
+            summary += '<tr style="background:#f0f0f0;"><th style="padding:4px 6px;text-align:left;border:1px solid #ddd;">利用者</th><th style="border:1px solid #ddd;padding:4px;">利用日数</th><th style="border:1px solid #ddd;padding:4px;">合計単位</th><th style="border:1px solid #ddd;padding:4px;">単価</th><th style="border:1px solid #ddd;padding:4px;">総費用</th><th style="border:1px solid #ddd;padding:4px;">給付費</th><th style="border:1px solid #ddd;padding:4px;">利用者負担</th></tr>';
+            targetUsers.forEach(user => {
+                const monthRecords = getMonthRecords(user.id, year, month);
+                if (Object.keys(monthRecords).length === 0) return;
+                const ym = year + '-' + month.padStart(2,'0');
+                const cert = (user.certificates||[])
+                    .filter(c => { const f=(c.certValidFrom||'0000-00').substring(0,7); const t=(c.certValidTo||'9999-12').substring(0,7); return f<=ym && ym<=t; })
+                    .sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0]
+                    || (user.certificates||[])[0] || {};
+                const building = (facility.buildings||[]).find(b=>(b.users||[]).includes(user.id))||null;
+                const uc = calcUnits(user, building, cert, monthRecords);
+                const am = calcAmount(uc.totalUnits, facility.areaCode||'01', getIncomeClassCode(cert.certBurdenLimit), cert.certBurdenLimit);
+                summary += '<tr><td style="border:1px solid #ddd;padding:4px 6px;">' + user.name + '</td>' +
+                    '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + uc.serviceDays + '日</td>' +
+                    '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + uc.totalUnits + '</td>' +
+                    '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + am.tanka + '円</td>' +
+                    '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + am.totalCost.toLocaleString() + '円</td>' +
+                    '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + am.grantFee.toLocaleString() + '円</td>' +
+                    '<td style="border:1px solid #ddd;padding:4px;text-align:right;">' + am.userBurden.toLocaleString() + '円</td></tr>';
+            });
+            summary += '</table>';
+            document.getElementById('exportStatus').innerHTML = summary;
         }
 
         function generateSV(year, month, targetUsers) {
