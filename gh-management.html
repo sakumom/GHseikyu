@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>グループホーム請求管理システム v4.8</title>
+    <title>グループホーム請求管理システム v4.9</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
     <style>
         * {
@@ -616,7 +616,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏠 グループホーム請求管理システム v4.8</h1>
+            <h1>🏠 グループホーム請求管理システム v4.9</h1>
             <p>障害者共同生活援助サービス</p>
         </div>
 
@@ -3901,6 +3901,8 @@
 
             if (type === 'SE') {
                 generateSEPDF(year, mon, targetUsers);
+            } else if (type === 'SV') {
+                generateSVPDF(year, mon, targetUsers);
             } else {
                 document.getElementById('exportStatus').innerHTML =
                     '<div class="alert alert-info">ℹ️ ' + type + ' のPDF出力機能は現在準備中です。</div>';
@@ -4415,12 +4417,11 @@
                 allPages.push(buildSeikyuHTML(cityCode, cityUsers, serviceYm));
             });
 
-            // 新ウィンドウで表示
-            const win = window.open('', '_blank');
-            win.document.write(`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
-<title>帳票印刷 ${year}年${mon}月分</title>
+            // HTML→印刷用ページとして新ウィンドウで開く（ブラウザ印刷でPDF保存）
+            const docHtml = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<title>SE帳票 ${year}年${mon}月分</title>
 <style>
-body { font-family: "MS Gothic","Meiryo",monospace; margin:0; background:#eee; font-size:8pt; }
+body { font-family: "MS Gothic","Meiryo",monospace; margin:0; background:white; font-size:8pt; }
 .gh-page { width:210mm; min-height:297mm; background:white; box-sizing:border-box; padding:8mm 10mm; page-break-after:always; position:relative; }
 .gh-title { text-align:center; font-size:11pt; font-weight:bold; margin-bottom:2mm; }
 .gh-subtitle { text-align:center; font-size:9pt; margin-bottom:1.5mm; }
@@ -4430,20 +4431,19 @@ body { font-family: "MS Gothic","Meiryo",monospace; margin:0; background:#eee; f
 .gh-lbl { background:#f5f5f5; font-size:6.5pt; white-space:nowrap; }
 .gh-c { text-align:center; width:5.5mm; min-width:4.5mm; font-size:8pt; }
 .center { text-align:center; } .right { text-align:right; } .left { text-align:left; }
-#print-ui { background:#fff; padding:10px 20px; border-bottom:2px solid #333; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:100; }
-#print-ui button { background:#e03040; color:#fff; border:none; padding:8px 20px; font-size:14px; cursor:pointer; border-radius:4px; }
-@media print { #print-ui { display:none!important; } body { background:white; } .gh-page { box-shadow:none; } }
 @page { size:A4; margin:0; }
 </style></head><body>
-<div id="print-ui">
-  <strong>📄 帳票印刷プレビュー &nbsp;${year}年${mon}月分（${allPages.length}ページ）</strong>
-  <button onclick="window.print()">🖨️ 印刷 / PDF保存</button>
-  <span style="color:#888;font-size:12px;">「PDFに保存」を選択するとPDFファイルとして保存できます</span>
-</div>
 ${allPages.join('\n')}
-</body></html>`);
-            win.document.close();
-            document.getElementById('exportStatus').innerHTML = '<div class="alert alert-success">✅ 帳票プレビューを新しいウィンドウで開きました。ウィンドウ内の「印刷 / PDF保存」ボタンを押してください。</div>';
+</body></html>`;
+            // Blobで直接ダウンロード
+            const blob = new Blob([docHtml], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'SE' + year + mon.padStart(2,'0') + '_帳票.html';
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            document.getElementById('exportStatus').innerHTML = '<div class="alert alert-success">✅ SE帳票HTMLファイルをダウンロードしました。ブラウザで開いて Ctrl+P → 「PDFに保存」でPDFにできます。</div>';
         }
 
         // ── 基本サービス名の組み立て
@@ -4776,32 +4776,311 @@ ${allPages.join('\n')}
             document.getElementById('exportStatus').innerHTML = summary;
         }
 
+        // ── ステータスコード変換（J611 02レコード用）
+        // [38]：サービス提供の状況（1=本入居、3=本入居+夜間支援Ⅲ等）
+        // [37]：住居外利用時加算（外泊翌日の夜間=3、入院=2等）
+        function getSvStatusCodes(record, hasNight1, hasNight3) {
+            if (!record) return { f37: '', f38: '' };
+            const s = record.status || '';
+            if (s === '入院') return { f37: '2', f38: '' };
+            if (s === '外泊') return { f37: hasNight3 ? '3' : '', f38: '' };
+            // 本入居 or ○
+            const isPresent = s === '○（本入居）' || s === '○' || s === '本入居';
+            if (!isPresent) return { f37: '', f38: '' };
+            // 夜間支援等体制加算Ⅰ（ns1）があれば1、Ⅲがあれば3
+            // サンプルCSVでは通常日に[38]=3（夜間Ⅲ）または1（夜間Ⅰ）
+            let f38 = '1';
+            if (hasNight3) f38 = '3';
+            return { f37: '', f38: f38 };
+        }
+
         function generateSV(year, month, targetUsers) {
-            let csv = '"1","1","0","32","J61","0","' + (facility.facilityNumber||'') + '","0","1","' + year + month + '","0"\n';
-            let lineNum = 2;
+            const serviceYm = year + month.padStart(2,'0');
+            const nextDate = new Date(parseInt(year), parseInt(month), 1);
+            const processYM = nextDate.getFullYear() + String(nextDate.getMonth()+1).padStart(2,'0');
+            let dataLines = [];
+            let totalCount = 0;
+            const hasNight1 = !!(facility.nightSupportType1);
+            const hasNight3 = !!(facility.nightSupportType3);
+
             targetUsers.forEach(user => {
                 const monthRecords = getMonthRecords(user.id, year, month);
-                if (Object.keys(monthRecords).length > 0) {
-                    const certNo = (user.certificates && user.certificates.length > 0)
-                        ? (user.certificates.slice().sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0].certNo || '')
-                        : '';
-                    const cityCode = (user.certificates && user.certificates.length > 0)
-                        ? (user.certificates.slice().sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||''))[0].certCityCode || '')
-                        : '';
-                    csv += '"2","' + lineNum + '","J611","01","' + year + month + '","' + cityCode + '","' + (facility.facilityNumber||'') + '","' + certNo + '","1801"\n';
-                    lineNum++;
-                    const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        const dateStr = year + '-' + month.padStart(2,'0') + '-' + String(day).padStart(2,'0');
-                        const record = monthRecords[dateStr];
-                        const status = record ? (record.status === '○（本入居）' || record.status === '○' ? '3' : '') : '';
-                        csv += '"2","' + lineNum + '","J611","02","' + year + month + '","' + cityCode + '","' + (facility.facilityNumber||'') + '","' + certNo + '","1801","","' + day + '","","","","","","","","","","","","","","","","","","","","","","","","","","","' + status + '"\n';
-                        lineNum++;
-                    }
+                if (Object.keys(monthRecords).length === 0) return;
+                const ym = year + '-' + month.padStart(2,'0');
+                const cert = ((user.certificates||[])
+                    .filter(c => {
+                        const from = (c.certValidFrom||'0000-00-00').replace(/-/g,'').substring(0,6);
+                        const to   = (c.certValidTo  ||'9999-12-31').replace(/-/g,'').substring(0,6);
+                        return from <= serviceYm && serviceYm <= to;
+                    })
+                    .sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||'')))[0]
+                    || (user.certificates||[])[0] || {};
+                const certNo   = cert.certNo || '';
+                const cityCode = cert.certCityCode || '';
+                const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+                // 利用日数集計
+                const serviceDays = Object.values(monthRecords).filter(r => r.status === '○（本入居）' || r.status === '○').length;
+                const hospitalDays = Object.values(monthRecords).filter(r => r.status === '入院').length;
+                const externalDays = Object.values(monthRecords).filter(r => r.status === '外泊').length;
+
+                // J611 01レコード（ヘッダ）- 174フィールド
+                const r01 = ['J611','01',serviceYm,cityCode,facility.facilityNumber||'',certNo,'1801'];
+                // フィールド[9]〜[38]は空, [39]=合計, [40]=入院, [41]=外泊
+                const pad01 = Array(30).fill('');
+                const tail01 = Array(174 - 9 - 30 - 3).fill('');
+                dataLines.push(['J611','01',serviceYm,cityCode,facility.facilityNumber||'',certNo,'1801',
+                    ...Array(30).fill(''),
+                    String(serviceDays), String(hospitalDays), String(externalDays),
+                    ...Array(131).fill('')
+                ]);
+                totalCount++;
+
+                // J611 02レコード（日別）- 115フィールド
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = year + '-' + month.padStart(2,'0') + '-' + String(day).padStart(2,'0');
+                    const record = monthRecords[dateStr];
+                    const { f37, f38 } = getSvStatusCodes(record, hasNight1, hasNight3);
+                    const r02base = ['J611','02',serviceYm,cityCode,facility.facilityNumber||'',certNo,'1801','',String(day)];
+                    // フィールド[11]〜[36]=空, [37]=住居外, [38]=通常夜間, [39]〜=空
+                    const row02 = ['J611','02',serviceYm,cityCode,facility.facilityNumber||'',certNo,'1801','',String(day),
+                        ...Array(27).fill(''),
+                        f37, f38,
+                        ...Array(115 - 9 - 27 - 2).fill('')
+                    ];
+                    dataLines.push(row02);
+                    totalCount++;
                 }
             });
+
+            if (dataLines.length === 0) { alert('出力対象データがありません'); return; }
+
+            // 制御レコード（totalCountを正確に設定）
+            const ctrl = ['1','0', String(totalCount), 'J61','0', facility.facilityNumber||'','0','1', processYM,'0'];
+            let csv = '"1","1",' + ctrl.map(v=>'"'+v+'"').join(',') + '\n';
+            let lineNum = 2;
+            dataLines.forEach(fields => {
+                csv += '"2","' + lineNum + '",' + fields.map(v=>'"'+(v||'')+'"').join(',') + '\n';
+                lineNum++;
+            });
             csv += '"3","' + lineNum + '"\n';
-            downloadCSV(csv, 'SV' + year + month + '.csv');
+
+            const filename = 'SV' + year + month.padStart(2,'0') + '.csv';
+            downloadCSV(csv, filename);
+
+            // 計算サマリー表示
+            let summary = '<div class="alert alert-success">✅ ' + filename + ' をダウンロードしました</div>';
+            document.getElementById('exportStatus').innerHTML = summary;
+        }
+
+        // =========================================================
+        // SV帳票PDF生成（共同生活援助サービス提供実績記録票 様式18-1）
+        // =========================================================
+        function generateSVPDF(year, mon, targetUsers) {
+            const serviceYm = year + mon.padStart(2,'0');
+            const reiwa = parseInt(year) - 2018;
+            const m = parseInt(mon);
+            const ymDisp = `令和${String(reiwa).padStart(2,'0')}年${String(m).padStart(2,'0')}月`;
+            const facNo = (facility.facilityNumber||'').padStart(10,'0');
+            const daysInMonth = new Date(parseInt(year), parseInt(mon), 0).getDate();
+            const weekDayJp = ['日','月','火','水','木','金','土'];
+
+            const hasNight3 = !!(facility.nightSupportType3);
+
+            let allPages = [];
+            targetUsers.forEach(user => {
+                const monthRecords = getMonthRecords(user.id, year, mon);
+                if (Object.keys(monthRecords).length === 0) return;
+
+                const cert = ((user.certificates||[])
+                    .filter(c => {
+                        const from = (c.certValidFrom||'0000-00-00').replace(/-/g,'').substring(0,6);
+                        const to   = (c.certValidTo  ||'9999-12-31').replace(/-/g,'').substring(0,6);
+                        return from <= serviceYm && serviceYm <= to;
+                    })
+                    .sort((a,b)=>(b.certValidFrom||'').localeCompare(a.certValidFrom||'')))[0]
+                    || (user.certificates||[])[0] || {};
+                const certNo = cert.certNo || '';
+                const certNoDisp = certNo.padStart(10,'0');
+
+                const serviceDays = Object.values(monthRecords).filter(r => r.status === '○（本入居）' || r.status === '○').length;
+                const hospitalDays = Object.values(monthRecords).filter(r => r.status === '入院').length;
+                const externalDays = Object.values(monthRecords).filter(r => r.status === '外泊').length;
+
+                // 日別行の生成
+                let dayRows = '';
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = year + '-' + mon.padStart(2,'0') + '-' + String(day).padStart(2,'0');
+                    const record = monthRecords[dateStr];
+                    const dow = new Date(parseInt(year), parseInt(mon)-1, day).getDay();
+                    const dowStr = weekDayJp[dow];
+                    const isSun = dow === 0;
+                    const isSat = dow === 6;
+                    const dayStyle = isSun ? 'color:red;' : (isSat ? 'color:blue;' : '');
+
+                    const status = record ? record.status : '';
+                    let serviceDisp = '';
+                    let nightDisp = '';
+                    if (status === '入院') { serviceDisp = '<span style="font-size:7pt;">入院</span>'; }
+                    else if (status === '外泊') { serviceDisp = '<span style="font-size:7pt;">外泊</span>'; }
+                    else if (status === '○（本入居）' || status === '○') {
+                        // 夜間支援等体制加算の表示
+                        const { f37, f38 } = getSvStatusCodes(record, !!(facility.nightSupportType1), hasNight3);
+                        nightDisp = f38 || f37 || '';
+                    }
+
+                    dayRows += `<tr style="height:5.8mm;">
+                        <td class="sv-day" style="${dayStyle}">${day}</td>
+                        <td class="sv-dow" style="${dayStyle}">${dowStr}</td>
+                        <td class="sv-cell">${serviceDisp}</td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-night">${nightDisp}</td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-cell"></td>
+                        <td class="sv-sign"></td>
+                        <td class="sv-biko"></td>
+                    </tr>`;
+                }
+
+                // 集計行
+                const totalRow = `<tr style="background:#f8f8f8;font-size:7pt;">
+                    <td colspan="3" class="center" style="font-size:6.5pt;">合　計</td>
+                    <td class="center">${serviceDays}日</td>
+                    <td></td>
+                    <td class="center">${Object.values(monthRecords).filter(r=>r.status==='○（本入居）'||r.status==='○').length}回</td>
+                    <td class="center">0回</td>
+                    <td class="center">0回</td>
+                    <td class="center">0回</td>
+                    <td class="center">0回</td>
+                    <td class="center">0回</td>
+                    <td class="center">0回</td>
+                    <td class="center">0回</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>`;
+
+                const page = `<div class="sv-page">
+  <div style="position:absolute;top:3mm;right:4mm;font-size:7pt;">（様式18-1）</div>
+  <div style="margin-bottom:2mm;">
+    <span style="font-size:10pt;font-weight:bold;">${ymDisp}分　　共同生活援助サービス提供実績記録票</span>
+  </div>
+  <table class="sv-tbl" style="margin-bottom:2mm;">
+    <tr>
+      <td class="sv-lbl" style="width:14mm;font-size:6pt;" rowspan="2">受給者証<br>番　　号</td>
+      ${certNoDisp.split('').map(c=>`<td class="sv-nc">${c}</td>`).join('')}
+      <td class="sv-lbl" style="width:16mm;">支給決定障害者氏名</td>
+      <td colspan="6" style="padding:1px 4px;font-size:9pt;font-weight:bold;">${user.name||''}</td>
+      <td class="sv-lbl" style="width:14mm;">事業所番号</td>
+      ${facNo.split('').map(c=>`<td class="sv-nc">${c}</td>`).join('')}
+    </tr>
+    <tr>
+      <td colspan="10"></td>
+      <td class="sv-lbl" style="font-size:6pt;">事業者及び<br>その事業所</td>
+      <td colspan="10" style="padding:1px 4px;">${facility.facilityName||''}</td>
+    </tr>
+  </table>
+  <table class="sv-tbl" style="width:100%;table-layout:fixed;">
+    <colgroup>
+      <col style="width:7mm;"><col style="width:6mm;">
+      <col style="width:14mm;"><col style="width:9mm;"><col style="width:9mm;">
+      <col style="width:9mm;">
+      <col style="width:11mm;"><col style="width:11mm;"><col style="width:11mm;"><col style="width:11mm;">
+      <col style="width:11mm;"><col style="width:11mm;"><col style="width:11mm;">
+      <col style="width:11mm;">
+      <col style="width:12mm;"><col style="width:auto;">
+    </colgroup>
+    <thead>
+      <tr style="font-size:5.5pt;background:#f0f0f0;">
+        <td rowspan="2" class="center sv-lbl">日付</td>
+        <td rowspan="2" class="center sv-lbl">曜日</td>
+        <td colspan="12" class="center sv-lbl" style="border-bottom:1px solid #000;">支援実績</td>
+        <td rowspan="2" class="center sv-lbl">利用者<br>確認欄</td>
+        <td rowspan="2" class="center sv-lbl">備考</td>
+      </tr>
+      <tr style="font-size:5pt;background:#f0f0f0;">
+        <td class="center sv-lbl">サービス<br>提供<br>の状況</td>
+        <td class="center sv-lbl">住居外<br>利用</td>
+        <td class="center sv-lbl">退居後<br>支援</td>
+        <td class="center sv-lbl">夜間支<br>援等<br>体制加算</td>
+        <td class="center sv-lbl">入院時<br>支援<br>特別加算</td>
+        <td class="center sv-lbl">帰宅時<br>支援<br>加算</td>
+        <td class="center sv-lbl">日中<br>支援<br>加算</td>
+        <td class="center sv-lbl">医療<br>連携<br>体制加算</td>
+        <td class="center sv-lbl">自立生活<br>支援加算<br>（I）</td>
+        <td class="center sv-lbl">自立生活<br>支援加算<br>（II）</td>
+        <td class="center sv-lbl">集中的<br>支援<br>加算</td>
+      </tr>
+    </thead>
+    <tbody>
+      ${dayRows}
+      ${totalRow}
+    </tbody>
+  </table>
+  <table class="sv-tbl" style="margin-top:1mm;font-size:6pt;">
+    <tr>
+      <td class="sv-lbl" style="width:12mm;">退居日</td>
+      <td style="width:22mm;"></td>
+      <td class="sv-lbl" style="width:28mm;">自立生活支援加算(II)</td>
+      <td style="width:20mm;"></td>
+      <td class="sv-lbl" style="width:18mm;">退居後算定日</td>
+      <td style="width:20mm;"></td>
+    </tr>
+    <tr>
+      <td class="sv-lbl">移行支援住居</td>
+      <td></td>
+      <td class="sv-lbl">入居日</td>
+      <td></td>
+      <td class="sv-lbl">支援開始日</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td class="sv-lbl">集中的支援加算</td>
+      <td></td>
+      <td colspan="4"></td>
+    </tr>
+  </table>
+</div>`;
+                allPages.push(page);
+            });
+
+            if (allPages.length === 0) { alert('実績データがある利用者が見つかりません'); return; }
+
+            const docHtml = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<title>SV帳票 ${year}年${mon}月分</title>
+<style>
+body { font-family: "MS Gothic","Meiryo",monospace; margin:0; background:white; font-size:8pt; }
+.sv-page { width:297mm; min-height:210mm; background:white; box-sizing:border-box; padding:5mm 8mm; page-break-after:always; position:relative; }
+.sv-tbl { border-collapse:collapse; width:100%; }
+.sv-tbl td { border:1px solid #000; padding:1px 2px; vertical-align:middle; line-height:1.2; font-size:7pt; }
+.sv-lbl { background:#f5f5f5; font-size:5.5pt; }
+.sv-nc { text-align:center; width:4.5mm; font-size:7.5pt; }
+.sv-day { text-align:center; font-size:8pt; font-weight:bold; width:7mm; }
+.sv-dow { text-align:center; font-size:8pt; }
+.sv-cell { text-align:center; font-size:7pt; }
+.sv-night { text-align:center; font-size:8pt; font-weight:bold; }
+.sv-sign { }
+.sv-biko { }
+.center { text-align:center; }
+@page { size:A4 landscape; margin:0; }
+</style></head><body>
+${allPages.join('\n')}
+</body></html>`;
+
+            const blob = new Blob([docHtml], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'SV' + year + mon.padStart(2,'0') + '_帳票.html';
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            document.getElementById('exportStatus').innerHTML = '<div class="alert alert-success">✅ SV帳票HTMLファイルをダウンロードしました。</div>';
         }
 
         function countRecordsForMonth(userId, year, month) {
