@@ -4033,58 +4033,53 @@ window.onload = function() {
                     <td></td>
                 </tr>`;
             });
-            // 空行（最低3行）
-            const emptyNeeded = Math.max(3, 8 - details.length);
-            for(let i=0;i<emptyNeeded;i++) detailRows += `<tr><td colspan="22" style="height:6.5mm;"></td></tr>`;
+            // 空行（10行分確保）
+            const emptyNeeded = Math.max(0, 10 - details.length);
+            for(let i=0;i<emptyNeeded;i++) {
+                detailRows += `<tr style="height:5.8mm;">
+                    <td style="width:42mm;font-size:7pt;"></td>
+                    ${Array(6).fill('<td class="gh-c"></td>').join('')}
+                    ${Array(5).fill('<td class="gh-c"></td>').join('')}
+                    ${Array(3).fill('<td class="gh-c"></td>').join('')}
+                    ${Array(7).fill('<td class="gh-c"></td>').join('')}
+                    <td></td>
+                </tr>`;
+            }
 
             const n = (v) => Number(v||0).toLocaleString('ja-JP');
-            const tuStr  = String(totalUnits);
-            const tcStr  = String(am.totalCost);
-            const t10Str = String(Math.floor(am.totalCost * 0.1));
-            const ubStr  = String(am.userBurden);
-            const raStr  = String(am.grantFee);
 
             return `<div class="gh-page">
-  <div class="gh-title">訓練等給付費等明細書</div>
-  <div class="gh-subtitle">（共同生活援助）</div>
-  <div class="gh-nengetsu">${ymDisp}分</div>
-  <table class="gh-tbl" style="margin-bottom:1.5mm;">
-    <tr>
-      <td class="gh-lbl" style="width:22mm;">市町村番号</td>
-      ${cityNoStr.split('').map(c=>`<td class="gh-c">${c}</td>`).join('')}
-      <td style="border:none;width:4mm;"></td>
-      <td class="gh-lbl center" rowspan="2" style="width:18mm;">指定事業所番号</td>
-      ${facNoStr.split('').map(c=>`<td class="gh-c" style="width:5.2mm;">${c}</td>`).join('')}
-    </tr>
-    <tr>
-      <td class="gh-lbl">助成自治体番号</td>
-      ${Array(6).fill('<td class="gh-c">&nbsp;</td>').join('')}
-      <td style="border:none;"></td>
-      <td colspan="10" style="padding:1px 3px;font-size:7.5pt;">
-        <span style="font-size:6.5pt;color:#555;">事業者及びその事業所の名称</span><br>
-        ${f.facilityName||''}
-      </td>
-    </tr>
-    <tr>
-      <td class="gh-lbl">受給者証番号</td>
-      ${certNoStr.split('').map(c=>`<td class="gh-c">${c}</td>`).join('')}
-      <td style="border:none;"></td>
-      <td class="gh-lbl" colspan="2">地域区分</td>
-      <td colspan="9">${areaName}</td>
-    </tr>
-    <tr>
-      <td class="gh-lbl">支給決定障害者等氏名</td>
-      <td colspan="6" style="padding:1px 4px;">${user.name||''}</td>
-      <td style="border:none;"></td>
-      <td colspan="11"></td>
-    </tr>
-    <tr>
-      <td class="gh-lbl">支給決定に係る障害児氏名</td>
-      <td colspan="6"></td>
-      <td style="border:none;"></td>
-      <td colspan="11"></td>
-    </tr>
-  </table>
+  <table style="width:100%;border:none;margin-bottom:1.5mm;"><tr>
+    <td style="border:none;text-align:left;font-size:8pt;width:25%;">（様式第三）</td>
+    <td style="border:none;text-align:center;width:50%;">
+      <div style="font-size:11pt;font-weight:bold;">訓練等給付費等明細書</div>
+      <div style="font-size:9pt;">（共同生活援助）</div>
+    </td>
+    <td style="border:none;text-align:right;font-size:8.5pt;width:25%;vertical-align:bottom;">令和${String(reiwa).padStart(2,'0')}年${serviceYm.substring(4,6)}月分</td>
+  </tr></table>
+  <table style="width:100%;border:none;margin-bottom:1.5mm;"><tr>
+    <td style="border:none;vertical-align:top;width:50%;">
+      <table class="gh-tbl">
+        <tr><td class="gh-lbl" style="width:24mm;">市町村番号</td>${cityNoStr.split('').map(c=>`<td class="gh-c">${c}</td>`).join('')}</tr>
+        <tr><td class="gh-lbl">助成自治体番号</td>${Array(6).fill('<td class="gh-c"></td>').join('')}</tr>
+        <tr><td class="gh-lbl">受給者証番号</td>${certNoStr.split('').map(c=>`<td class="gh-c">${c}</td>`).join('')}</tr>
+        <tr><td class="gh-lbl" style="font-size:6pt;">支給決定障害者等氏名</td><td colspan="10" style="padding:1px 4px;">${user.name||''}</td></tr>
+        <tr><td class="gh-lbl" style="font-size:5.5pt;">支給決定に係る障害児氏名</td><td colspan="10"></td></tr>
+      </table>
+    </td>
+    <td style="border:none;width:3mm;"></td>
+    <td style="border:none;vertical-align:top;">
+      <table class="gh-tbl">
+        <tr>
+          <td class="gh-lbl" rowspan="3" style="width:7mm;writing-mode:vertical-rl;letter-spacing:2px;font-size:7pt;text-align:center;">請求事業者</td>
+          <td class="gh-lbl" style="width:18mm;">指定事業所番号</td>
+          ${facNoStr.split('').map(c=>`<td class="gh-c" style="width:5mm;">${c}</td>`).join('')}
+        </tr>
+        <tr><td class="gh-lbl" style="font-size:6pt;">事業者及びその<br>事業所の名称</td><td colspan="10" style="padding:1px 3px;font-size:7.5pt;">${f.facilityName||''}</td></tr>
+        <tr><td class="gh-lbl">地域区分</td><td colspan="10" style="padding:1px 3px;">${areaName}</td></tr>
+      </table>
+    </td>
+  </tr></table>
   <table class="gh-tbl" style="margin-bottom:1.5mm;">
     <tr>
       <td class="gh-lbl" style="width:38mm;">利用者負担上限月額　①</td>
@@ -4133,7 +4128,7 @@ window.onload = function() {
   <table class="gh-tbl" style="margin-bottom:1.5mm;">
     <thead>
       <tr>
-        <td class="gh-lbl center" rowspan="${details.length+emptyNeeded+1}" style="width:7mm;writing-mode:vertical-rl;font-size:7pt;">給<br>付<br>費<br>明<br>細<br>欄</td>
+        <td class="gh-lbl center" rowspan="${details.length+emptyNeeded+1}" style="width:7mm;writing-mode:vertical-rl;letter-spacing:1px;font-size:7pt;">給付費明細欄</td>
         <td class="gh-lbl center" style="width:42mm;">サービス内容</td>
         <td class="gh-lbl center" colspan="6">サービスコード</td>
         <td class="gh-lbl center" colspan="5">単位数</td>
@@ -4158,54 +4153,90 @@ window.onload = function() {
       <td colspan="14"></td>
     </tr>
   </table>
-  <table class="gh-tbl">
+  <table class="gh-tbl" style="margin-bottom:1.5mm;">
     <tr>
-      <td class="gh-lbl center" rowspan="13" style="width:7mm;writing-mode:vertical-rl;font-size:7pt;">請<br>求<br>額<br>集<br>計<br>欄</td>
-      <td class="gh-lbl" style="width:42mm;">サービス種類コード</td>
-      <td class="gh-c">3</td><td class="gh-c">3</td><td colspan="10"></td>
-      <td class="gh-lbl" style="width:10mm;">合計</td>
-      <td colspan="8"></td>
+      <td class="gh-lbl center" rowspan="13" style="width:7mm;writing-mode:vertical-rl;letter-spacing:1px;font-size:7pt;">請求額集計欄</td>
+      <td class="gh-lbl" colspan="2" style="width:42mm;">サービス種類コード</td>
+      <td class="gh-c">3</td><td class="gh-c">3</td><td colspan="6"></td>
+      <td class="gh-lbl center" style="width:10mm;">合計</td>
+      <td colspan="8"></td><td colspan="3"></td>
     </tr>
     <tr>
-      <td class="gh-lbl">サービス利用日数</td>
-      ${String(uc.serviceDays).split('').map(c=>`<td class="gh-c">${c}</td>`).join('')}
-      <td class="gh-lbl" colspan="2">日</td>
-      <td colspan="8"></td>
-      <td class="gh-lbl" colspan="2">日</td>
-      <td colspan="5"></td>
+      <td class="gh-lbl" colspan="2">サービス利用日数</td>
+      ${nc(String(uc.serviceDays),2)}<td class="gh-lbl" style="width:5mm;">日</td><td colspan="5"></td>
+      <td class="gh-lbl center">合計</td>
+      ${nc(String(uc.serviceDays),2)}<td class="gh-lbl" style="width:5mm;">日</td><td colspan="8"></td>
     </tr>
-    <tr><td class="gh-lbl">給付単位数</td><td colspan="5" class="right" style="padding-right:3px;">${n(totalUnits)}</td><td colspan="7"></td><td colspan="9" class="right" style="padding-right:3px;">${n(totalUnits)}</td></tr>
-    <tr><td class="gh-lbl">単位数単価</td><td colspan="5" class="right" style="padding-right:3px;">${unitPriceDisp}</td><td class="left" style="font-size:6.5pt;" colspan="2">円/単位</td><td colspan="6"></td><td style="font-size:6.5pt;" colspan="2">円/単位</td><td colspan="6"></td></tr>
-    <tr><td class="gh-lbl">総費用額</td><td colspan="5" class="right" style="padding-right:3px;">${n(am.totalCost)}</td><td colspan="7"></td><td colspan="9" class="right" style="padding-right:3px;">${n(am.totalCost)}</td></tr>
-    <tr><td class="gh-lbl">１割相当額</td><td colspan="5" class="right" style="padding-right:3px;">${n(Math.floor(am.totalCost*0.1))}</td><td colspan="16"></td></tr>
-    <tr><td class="gh-lbl">利用者負担額②</td><td colspan="5" class="right" style="padding-right:3px;">${n(am.userBurden)}</td><td colspan="16"></td></tr>
-    <tr><td class="gh-lbl" style="font-size:6.5pt;">上限月額調整(①②の内少ない数)</td><td colspan="5" class="right" style="padding-right:3px;">0</td><td colspan="7"></td><td colspan="9" class="right" style="padding-right:3px;">0</td></tr>
-    <tr><td class="gh-lbl">調整後利用者負担額</td><td colspan="21"></td></tr>
-    <tr><td class="gh-lbl">上限額管理後利用者負担額</td><td colspan="21"></td></tr>
-    <tr><td class="gh-lbl">決定利用者負担額</td><td colspan="5" class="right" style="padding-right:3px;">0</td><td colspan="7"></td><td colspan="9" class="right" style="padding-right:3px;">0</td></tr>
+    <tr>
+      <td class="gh-lbl" colspan="2">給付単位数</td>
+      ${nc(String(totalUnits),8)}
+      <td class="gh-lbl center">合計</td>
+      ${nc(String(totalUnits),8)}<td colspan="3"></td>
+    </tr>
+    <tr>
+      <td class="gh-lbl" colspan="2">単位数単価</td>
+      <td colspan="6" class="right" style="padding-right:3px;">${unitPriceDisp}</td><td colspan="2" style="font-size:6.5pt;">円/単位</td>
+      <td></td>
+      <td colspan="11"></td>
+    </tr>
+    <tr>
+      <td class="gh-lbl" colspan="2">総費用額</td>
+      ${nc(String(am.totalCost),8)}
+      <td class="gh-lbl center">合計</td>
+      ${nc(String(am.totalCost),8)}<td colspan="3"></td>
+    </tr>
+    <tr>
+      <td class="gh-lbl" colspan="2">１割相当額</td>
+      ${nc(String(Math.floor(am.totalCost*0.1)),8)}
+      <td colspan="12"></td>
+    </tr>
+    <tr>
+      <td class="gh-lbl" colspan="2">利用者負担額　②</td>
+      ${nc(String(am.userBurden),8)}
+      <td colspan="12"></td>
+    </tr>
+    <tr>
+      <td class="gh-lbl" colspan="2" style="font-size:5.5pt;">上限月額調整(①②の内少ない数)</td>
+      ${nc(String(Math.min(burdenLimit, am.userBurden)),8)}
+      <td class="gh-lbl center">合計</td>
+      ${nc(String(Math.min(burdenLimit, am.userBurden)),8)}<td colspan="3"></td>
+    </tr>
+    <tr><td class="gh-lbl" colspan="2">調整後利用者負担額</td><td colspan="20"></td></tr>
+    <tr><td class="gh-lbl" colspan="2">上限額管理後利用者負担額</td><td colspan="20"></td></tr>
+    <tr>
+      <td class="gh-lbl" colspan="2">決定利用者負担額</td>
+      ${nc('0',8)}
+      <td class="gh-lbl center">合計</td>
+      ${nc('0',8)}<td colspan="3"></td>
+    </tr>
     <tr>
       <td class="gh-lbl">請求額</td>
       <td class="gh-lbl" style="width:18mm;">給付費</td>
-      <td colspan="4" class="right" style="padding-right:3px;">${n(am.grantFee)}</td>
-      <td colspan="7"></td>
-      <td colspan="9" class="right" style="padding-right:3px;">${n(am.grantFee)}</td>
+      ${nc(String(am.grantFee),8)}
+      <td class="gh-lbl center">合計</td>
+      ${nc(String(am.grantFee),8)}<td colspan="3"></td>
     </tr>
-    <tr><td class="gh-lbl" colspan="2">自治体助成分請求額</td><td colspan="20"></td></tr>
+    <tr>
+      <td class="gh-lbl" colspan="2">自治体助成分請求額</td>
+      ${nc('0',8)}
+      <td class="gh-lbl center">合計</td>
+      ${nc('0',8)}<td colspan="3"></td>
+    </tr>
   </table>
-  <table class="gh-tbl" style="margin-top:1.5mm;">
+  <table class="gh-tbl">
     <tr>
       <td class="gh-lbl" colspan="2" style="width:55mm;">特定障害者特別給付費</td>
-      <td colspan="8"></td>
+      <td colspan="10"></td>
     </tr>
     <tr>
-      <td class="gh-lbl" style="width:28mm;">給付費請求額</td>
-      <td class="gh-lbl" style="width:27mm;">実費算定額</td>
-      <td colspan="8"></td>
+      <td class="gh-lbl center" style="width:28mm;">給付費請求額</td>
+      <td class="gh-lbl center" style="width:27mm;">実費算定額</td>
+      <td colspan="10"></td>
     </tr>
     <tr>
-      <td class="right" style="padding-right:4px;">10,000</td>
-      <td class="right" style="padding-right:4px;">10,000</td>
-      <td colspan="8"></td>
+      <td class="right" style="padding-right:4px;">${n(10000)}</td>
+      <td class="right" style="padding-right:4px;">${n(10000)}</td>
+      <td colspan="10"></td>
     </tr>
   </table>
 </div>`;
