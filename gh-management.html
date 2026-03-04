@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>グループホーム請求管理システム v4.12</title>
+    <title>グループホーム請求管理システム v4.13</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.3/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -616,7 +617,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏠 グループホーム請求管理システム v4.12</h1>
+            <h1>🏠 グループホーム請求管理システム v4.13</h1>
             <p>障害者共同生活援助サービス</p>
         </div>
 
@@ -4359,6 +4360,584 @@ window.onload = function() {
 </div>`;
         }
 
+        // =========================================================
+        // jsPDF 精密描画ヘルパー
+        // 正しいPDFサンプル（SE20260101.pdf）の座標を解析して再現
+        // =========================================================
+
+        // jsPDFでSE明細書1ページ描画（A4縦 595.28 x 841.89 pt）
+        function drawMeisaiPage(doc, user, cert, uc, am, building, serviceYm, details, totalUnits) {
+            const f = facility;
+            const reiwa = parseInt(serviceYm.substring(0,4)) - 2018;
+            const monNum = parseInt(serviceYm.substring(4,6));
+            const ymDisp = `令和${String(reiwa).padStart(2,'0')}年${String(monNum).padStart(2,'0')}月`;
+            const startW = cert.certValidFrom ? (() => {
+                const y2 = parseInt(cert.certValidFrom.replace(/-/g,'').substring(0,4)) - 2018;
+                const m2 = cert.certValidFrom.replace(/-/g,'').substring(4,6);
+                const d2 = cert.certValidFrom.replace(/-/g,'').substring(6,8);
+                return `令和${String(y2).padStart(2,'0')}年${m2}月${d2}日`;
+            })() : '';
+            const cityCode = cert.certCityCode || '';
+            const certNo = (cert.certNo || '').replace(/-/g,'').padStart(10,'0');
+            const areaName = {'01':'一級地','02':'二級地','03':'三級地','04':'四級地','05':'五級地','06':'六級地','07':'七級地','20':'その他'}[f.areaCode||'01']||'その他';
+            const supportDisp = cert.certSupportLevel || '';
+            const burdenLimit = parseInt(cert.certBurdenLimit)||0;
+            const unitPriceDisp = ((GH_TANKA[f.areaCode||'01']||10.00)).toFixed(2);
+            const hosdays = uc.hospitalDays || 0;
+            const facNoStr = (f.facilityNumber||'').replace(/-/g,'').padStart(10,'0');
+            const cityNoStr = cityCode.replace(/-/g,'').padStart(6,'0');
+
+            const W = 595.28, H = 841.89;
+            // 線幅定数（正しいPDFより）
+            const LW_THICK = 1.8, LW_THIN = 0.9;
+            // フォント設定
+            doc.setFont('IPAMincho');
+
+            // ── 様式第三ラベル（左上）
+            doc.setFontSize(12);
+            doc.text('（様式第三）', 31.6, 24.6);
+
+            // ── タイトル
+            doc.setFontSize(12);
+            doc.text('訓練等給付費等明細書', 239.9, 56.0);
+
+            // ── 副タイトル
+            doc.setFontSize(10);
+            doc.text('（共同生活援助）', 266.5, 72.0);
+
+            // ── 年月 + 市町村番号エリア
+            // 市町村番号ラベル
+            doc.setFontSize(9);
+            doc.text('市町村番号', 36.0, 99.9);
+
+            // 市町村番号マス（各20pt幅）
+            const cityBoxX = 105.6, cityBoxY = 96.5, cityBoxH = 30, cityBoxW = 20;
+            doc.setLineWidth(LW_THIN);
+            for(let i=0;i<6;i++) {
+                doc.rect(cityBoxX + i*cityBoxW, cityBoxY, cityBoxW, cityBoxH);
+                doc.setFontSize(10);
+                doc.text(cityNoStr[i]||' ', cityBoxX + i*cityBoxW + cityBoxW/2, cityBoxY+20, {align:'center'});
+            }
+
+            // 年月
+            doc.setFontSize(9);
+            doc.text(`${ymDisp}分`, 350, 99.9);
+
+            // 助成自治体番号
+            doc.text('助成自治体番号', 36.0, 114.4);
+            doc.setLineWidth(LW_THIN);
+            for(let i=0;i<6;i++) {
+                doc.rect(cityBoxX + i*cityBoxW, 111.0, cityBoxW, 15);
+            }
+
+            // 区切り線（太線）
+            doc.setLineWidth(LW_THICK);
+            doc.line(35.8, 111.0, 225.8, 111.0);
+
+            // ── 右側：指定事業所番号ブロック
+            doc.setFontSize(9);
+            doc.text('指定事業所番号', 291.0, 132.0);
+            const facBoxX = 375, facBoxY = 126, facBoxW = 18, facBoxH = 20;
+            doc.setLineWidth(LW_THIN);
+            for(let i=0;i<10;i++) {
+                doc.rect(facBoxX + i*facBoxW, facBoxY, facBoxW, facBoxH);
+                doc.setFontSize(10);
+                doc.text(facNoStr[i]||' ', facBoxX + i*facBoxW + facBoxW/2, facBoxY+14, {align:'center'});
+            }
+
+            // 請（縦書きラベル）
+            doc.setFontSize(10);
+            ['請','求','事','業','者'].forEach((ch,i) => {
+                doc.text(ch, 277.2, 141 + i*18);
+            });
+
+            // 事業者名称
+            doc.setFontSize(10);
+            doc.text('事業者及びその事業所の名称', 296.8, 165.0);
+            doc.text(f.facilityName||'', 296.8, 183.0);
+
+            // 受給者証番号エリア
+            doc.setFontSize(9);
+            doc.text('受給者証番号', 36.0, 153.0);
+            const certBoxX = 120.6, certBoxY = 146, certBoxW = 15, certBoxH = 20;
+            doc.setLineWidth(LW_THIN);
+            for(let i=0;i<10;i++) {
+                doc.rect(certBoxX + i*certBoxW, certBoxY, certBoxW, certBoxH);
+                doc.setFontSize(10);
+                doc.text(certNo[i]||' ', certBoxX + i*certBoxW + certBoxW/2, certBoxY+14, {align:'center'});
+            }
+
+            // 受給者証番号の外枠下線
+            doc.setLineWidth(LW_THIN);
+            doc.line(35.3, 166.0, 270.3, 166.0);
+
+            // 支給決定障害者等氏名
+            doc.setFontSize(9);
+            doc.text('支給決定障害者等氏名', 36.0, 183.0);
+            doc.setFontSize(10);
+            doc.text(user.name||'', 125.0, 183.0);
+            doc.line(35.6, 191.0, 270.6, 191.0);
+
+            // 支給決定に係る障害児氏名
+            doc.setFontSize(9);
+            doc.text('支給決定に係る障害児氏名', 36.0, 201.0);
+            doc.line(355.3, 201.0, 555.3, 201.0);
+
+            // 地域区分
+            doc.text('地域区分', 365.3, 204.0);
+            doc.setFontSize(10);
+            doc.text(areaName, 415.0, 204.0);
+
+            // ── 太線 (利用者負担上限月額エリア上線)
+            doc.setLineWidth(LW_THICK);
+            doc.line(130.6, 226.0, 560.6, 226.0);  // 横太線
+            doc.line(130.6, 266.0, 560.6, 266.0);
+
+            // 利用者負担上限月額
+            doc.setFontSize(9);
+            doc.text('利用者負担上限月額　①', 36.0, 233.0);
+            doc.setFontSize(10);
+            doc.text(String(burdenLimit), 165.0, 233.0, {align:'right'});
+
+            // 障害支援区分
+            doc.setFontSize(9);
+            doc.text('障害支援区分', 360.0, 228.0);
+            doc.setFontSize(10);
+            doc.text(supportDisp, 430.0, 233.0);
+
+            // 上限月額区切りマス
+            const limitBoxX = 155.6, limitBoxY = 226.0, limitBoxW = 15, limitBoxH = 15;
+            doc.setLineWidth(LW_THIN);
+            doc.rect(155.6, 226.0, 60, 15);
+            [155.6, 170.6, 185.6, 200.6].forEach(x => doc.line(x, 226.0, x, 241.0));
+
+            // 利用者負担上限額管理事業所
+            doc.setFontSize(9);
+            doc.text('利用者負担上限額管理事業所', 36.0, 258.0);
+            doc.text('指定事業所番号', 140.0, 258.0);
+            doc.text('管理結果', 365.0, 258.0);
+            doc.text('管理結果額', 435.0, 258.0);
+            doc.setLineWidth(LW_THICK);
+            doc.line(130.6, 251.0, 130.6, 281.0);  // 縦太線
+            doc.line(360.0, 251.0, 360.0, 266.0);
+            doc.line(425.0, 251.0, 425.0, 266.0);
+
+            // 事業所名称
+            doc.setFontSize(9);
+            doc.text('事業所名称', 140.0, 273.0);
+            doc.setLineWidth(LW_THIN);
+            doc.line(130.6, 266.5, 130.6, 281.0);
+
+            // ── サービス種別エリア（太線）
+            doc.setLineWidth(LW_THICK);
+            doc.line(100.0, 291.0, 100.0, 321.0);
+            doc.line(265.0, 291.0, 265.0, 321.0);
+            doc.line(430.0, 291.0, 430.0, 321.0);
+            doc.line(480.0, 291.0, 480.0, 321.0);
+            doc.line(70.0, 306.0, 530.0, 306.0);
+
+            doc.setFontSize(9);
+            doc.text('サービス種別', 36.0, 297.0);
+            doc.setFontSize(10);
+            doc.text('3', 78, 299.0, {align:'center'});
+            doc.text('3', 93, 299.0, {align:'center'});
+            doc.setLineWidth(LW_THIN);
+            [70,85].forEach(x => doc.line(x, 291.0, x, 321.0));
+
+            doc.setFontSize(8);
+            doc.text('開始年月日', 103.0, 297.0);
+            doc.setFontSize(10);
+            doc.text(startW, 165.0, 296.0);
+            doc.setFontSize(8);
+            doc.text('終了年月日', 270.0, 297.0);
+            doc.text('入院日数', 435.0, 297.0);
+            if(hosdays) doc.text(String(hosdays), 475, 297.0);
+            doc.text('外泊日数', 485.0, 297.0);
+
+            // 2行目
+            doc.text('開始年月日', 103.0, 313.0);
+            doc.text('終了年月日', 270.0, 313.0);
+            doc.text('入院日数', 435.0, 313.0);
+            doc.text('外泊日数', 485.0, 313.0);
+
+            // ── 給付費明細欄（太枠）
+            doc.setLineWidth(LW_THICK);
+            doc.line(51.0, 331.0, 51.0, 496.0);
+            doc.line(176.0, 331.0, 176.0, 496.0);
+            doc.line(266.0, 331.0, 266.0, 496.0);
+            doc.line(340.1, 331.0, 340.1, 496.0);
+            doc.line(371.5, 331.0, 371.5, 496.0);
+            doc.line(445.1, 331.0, 445.1, 496.0);
+            doc.line(50.0, 346.0, 560.0, 346.0);
+
+            // ヘッダ行
+            doc.setFontSize(7);
+            doc.text('給付費明細欄', 37.0, 410, {angle:90});
+            doc.setFontSize(8);
+            doc.text('サービス内容', 110.0, 340.0, {align:'center'});
+            doc.text('サービスコード', 305.0, 340.0, {align:'center'});
+            doc.text('単位数', 352.0, 337.0, {align:'center'});
+            doc.text('回数', 405.0, 340.0, {align:'center'});
+            doc.text('サービス単位', 503.0, 340.0, {align:'center'});
+            doc.text('摘要', 550.0, 340.0, {align:'center'});
+
+            // 細線（コード欄の区切り）
+            doc.setLineWidth(LW_THIN);
+            [191,206,221,236,251,281,296,311].forEach(x => doc.line(x, 346.0, x, 496.0));
+            [325.2, 356.0, 386.0, 416.0, 430.9].forEach(x => doc.line(x, 346.0, x, 496.0));
+
+            // 明細行描画
+            const rowH = 15;
+            const detailStartY = 346.0;
+            details.forEach((d, idx) => {
+                const rowY = detailStartY + (idx+1)*rowH;
+                doc.setLineWidth(LW_THIN);
+                doc.line(50.0, rowY, 560.0, rowY);
+                doc.setFontSize(8);
+                doc.text(d.name, 54.0, rowY+10);
+                const codeStr = String(d.code).padStart(6,'0');
+                const codeBoxW = (340.1-176.0)/6;
+                codeStr.split('').forEach((c,ci) => {
+                    doc.text(c, 176.0 + ci*codeBoxW + codeBoxW/2, rowY+10, {align:'center'});
+                });
+                doc.text(String(d.unitsPer), 354.0, rowY+10, {align:'right'});
+                doc.text(String(d.count), 408.0, rowY+10, {align:'right'});
+                doc.text(String(d.total), 444.0, rowY+10, {align:'right'});
+            });
+            // 空行
+            const emptyRows = Math.max(3, 9 - details.length);
+            for(let i=details.length; i<details.length+emptyRows; i++) {
+                const rowY = detailStartY + (i+1)*rowH;
+                if(rowY < 496) {
+                    doc.setLineWidth(LW_THIN);
+                    doc.line(50.0, rowY, 560.0, rowY);
+                }
+            }
+            // 下枠
+            doc.line(50.0, 496.0, 560.0, 496.0);
+
+            // ── 日中介護等支援加算欄
+            doc.setLineWidth(LW_THICK);
+            doc.line(71.0, 506.0, 71.0, 536.0);
+            doc.line(146.0, 506.0, 146.0, 536.0);
+            doc.line(386.0, 506.0, 386.0, 521.0);
+            doc.line(531.0, 506.0, 531.0, 521.0);
+            doc.line(145.0, 521.0, 560.0, 521.0);
+
+            doc.setFontSize(6);
+            doc.text('日中介護等', 36.0, 512.0);
+            doc.text('支援加算欄', 36.0, 519.0);
+            doc.setFontSize(8);
+            doc.text('日中活動先事業所', 72.0, 512.0);
+            doc.text('指定事業所番号', 150.0, 512.0);
+            doc.setFontSize(6);
+            doc.text('当該事業所への通所日数', 389.0, 512.0);
+            doc.setFontSize(8);
+            doc.text('事業所名称', 150.0, 528.0);
+
+            // ── 請求額集計欄（太枠）
+            const calcY = 546.0;
+            doc.setLineWidth(LW_THICK);
+            doc.line(50.0, calcY, 50.0, 741.0);
+            doc.line(145.0, calcY, 145.0, 741.0);
+            doc.line(235.0, calcY, 235.0, 741.0);
+            doc.line(325.0, calcY, 325.0, 741.0);
+
+            doc.setFontSize(7);
+            doc.text('請求額集計欄', 37.0, 630, {angle:90});
+
+            const rows2 = [
+                {label:'サービス種類コード', y:561},
+                {label:'サービス利用日数', y:576},
+                {label:'給付単位数', y:591},
+                {label:'単位数単価', y:606},
+                {label:'総費用額', y:621},
+                {label:'１割相当額', y:636},
+                {label:'利用者負担額②', y:651},
+                {label:'上限月額調整(①②の内少ない数)', y:666},
+                {label:'調整後利用者負担額', y:681},
+                {label:'上限額管理後利用者負担額', y:696},
+                {label:'決定利用者負担額', y:711},
+                {label:'請求額', y:726},
+                {label:'自治体助成分請求額', y:741},
+            ];
+
+            doc.setLineWidth(LW_THIN);
+            rows2.forEach((r,i) => {
+                if(i < rows2.length-1) doc.line(50.0, r.y, 415.0, r.y);
+            });
+            doc.setLineWidth(LW_THICK);
+            [621, 666, 681, 696, 711, 726].forEach(y => doc.line(50.0, y, 415.0, y));
+
+            const n = v => Number(v||0).toLocaleString('ja-JP');
+            doc.setFontSize(8);
+            // サービス種類コード
+            doc.text('サービス種類コード', 52.0, 558.0);
+            doc.setFontSize(10);
+            doc.text('3', 165.0, 558.0, {align:'center'});
+            doc.text('3', 180.0, 558.0, {align:'center'});
+            doc.setFontSize(9);
+            doc.text('合計', 336.0, 558.0);
+
+            doc.setFontSize(8);
+            doc.text('サービス利用日数', 52.0, 573.0);
+            doc.setFontSize(10);
+            doc.text(String(uc.serviceDays), 175.0, 573.0, {align:'right'});
+            doc.setFontSize(8);
+            doc.text('日', 178.0, 573.0);
+
+            doc.text('給付単位数', 52.0, 588.0);
+            doc.setFontSize(10);
+            doc.text(n(totalUnits), 232.0, 588.0, {align:'right'});
+            doc.text(n(totalUnits), 414.0, 588.0, {align:'right'});
+
+            doc.setFontSize(8);
+            doc.text('単位数単価', 52.0, 603.0);
+            doc.setFontSize(10);
+            doc.text(unitPriceDisp, 232.0, 603.0, {align:'right'});
+            doc.setFontSize(8);
+            doc.text('円/単位', 235.0, 603.0);
+
+            doc.text('総費用額', 52.0, 618.0);
+            doc.setFontSize(10);
+            doc.text(n(am.totalCost), 232.0, 618.0, {align:'right'});
+            doc.text(n(am.totalCost), 414.0, 618.0, {align:'right'});
+
+            doc.setFontSize(8);
+            doc.text('１割相当額', 52.0, 633.0);
+            doc.setFontSize(10);
+            doc.text(n(Math.floor(am.totalCost*0.1)), 232.0, 633.0, {align:'right'});
+
+            doc.setFontSize(8);
+            doc.text('利用者負担額②', 52.0, 648.0);
+            doc.setFontSize(10);
+            doc.text(n(am.userBurden), 232.0, 648.0, {align:'right'});
+
+            doc.setFontSize(8);
+            doc.text('上限月額調整(①②の内少ない数)', 52.0, 663.0);
+            doc.setFontSize(10);
+            doc.text('0', 232.0, 663.0, {align:'right'});
+            doc.text('0', 414.0, 663.0, {align:'right'});
+
+            doc.setFontSize(8);
+            doc.text('調整後利用者負担額', 52.0, 678.0);
+            doc.text('上限額管理後利用者負担額', 52.0, 693.0);
+            doc.text('決定利用者負担額', 52.0, 708.0);
+            doc.setFontSize(10);
+            doc.text('0', 232.0, 708.0, {align:'right'});
+            doc.text('0', 414.0, 708.0, {align:'right'});
+
+            doc.setFontSize(8);
+            doc.text('請求額', 52.0, 723.0);
+            doc.text('給付費', 150.0, 723.0);
+            doc.setFontSize(10);
+            doc.text(n(am.grantFee), 232.0, 723.0, {align:'right'});
+            doc.text(n(am.grantFee), 414.0, 723.0, {align:'right'});
+
+            doc.setFontSize(8);
+            doc.text('自治体助成分請求額', 52.0, 738.0);
+
+            // 縦の細線（右側集計欄）
+            doc.setLineWidth(LW_THIN);
+            [160,175,190,205,220,280,295,310,340,355,370,385,400].forEach(x => {
+                doc.line(x, 576.0, x, 590.5);
+            });
+
+            // ── 特定障害者特別給付費
+            doc.setLineWidth(LW_THICK);
+            doc.line(35.0, 766.0, 185.0, 766.0);
+            doc.line(110.0, 766.0, 110.0, 781.0);
+            doc.line(35.0, 781.0, 185.0, 781.0);
+            doc.setFontSize(9);
+            doc.text('特定障害者特別給付費', 52.0, 762.0);
+            doc.setFontSize(8);
+            doc.text('給付費請求額', 38.0, 778.0);
+            doc.text('実費算定額', 115.0, 778.0);
+            doc.setFontSize(10);
+            doc.text('10,000', 105.0, 793.0, {align:'right'});
+            doc.text('10,000', 182.0, 793.0, {align:'right'});
+
+            // 受給者証番号マスの細線
+            doc.setLineWidth(LW_THIN);
+            [120.6,135,150,165,180,195,210,225,240,255].forEach(x => {
+                doc.line(x, 146.0, x, 166.0);
+            });
+        }
+
+        // jsPDFで請求書ページ描画（様式第一）
+        function drawSeikyuPage(doc, cityCode, cityUsers, serviceYm) {
+            const f = facility;
+            const reiwa = parseInt(serviceYm.substring(0,4)) - 2018;
+            const m = parseInt(serviceYm.substring(4,6));
+            const processY = (m===12) ? parseInt(serviceYm.substring(0,4))+1 : parseInt(serviceYm.substring(0,4));
+            const processM = (m===12) ? 1 : m+1;
+            const processReiwa = processY - 2018;
+            const requestDateStr = `令和 ${processReiwa}年 ${processM}月 20日`;
+            const ymDisp = `令和 ${String(reiwa).padStart(2,'0')} 年 ${String(m).padStart(2,'0')} 月 分`;
+            const cityNameMap = {
+                "131024":"中央区長","131032":"港区長","131041":"新宿区長","131059":"文京区長",
+                "131067":"台東区長","131075":"墨田区長","131083":"江東区長","131091":"品川区長",
+                "131105":"目黒区長","131113":"大田区長","131121":"世田谷区長","131130":"渋谷区長",
+                "131148":"中野区長","131156":"杉並区長","131164":"豊島区長","131172":"北区長",
+                "131181":"荒川区長","131199":"板橋区長","131202":"練馬区長","131211":"足立区長",
+                "131229":"葛飾区長","131237":"江戸川区長",
+                "132012":"八王子市長","132021":"立川市長","132039":"武蔵野市長","132047":"三鷹市長",
+            };
+            const cityName = cityNameMap[cityCode] || cityCode + '長';
+            const facNoStr = (f.facilityNumber||'').replace(/-/g,'').padStart(10,'0');
+            let totalUnits=0, totalCost=0, totalGrant=0;
+            cityUsers.forEach(u => { totalUnits += u._totalUnits||0; totalCost += u._totalCost||0; totalGrant += u._grantFee||0; });
+            const totalTokutei = cityUsers.length * 10000;
+            const grandTotal = totalCost + totalTokutei;
+            const n = v => Number(v||0).toLocaleString('ja-JP');
+            const LW_THICK = 1.8, LW_THIN = 0.9;
+            doc.setFont('IPAMincho');
+
+            // 様式第一
+            doc.setFontSize(12);
+            doc.text('（様式第一）', 50.0, 66.0);
+
+            // タイトル
+            doc.setFontSize(16);
+            doc.text('介護給付費・訓練等給付費等請求書', 169.9, 93.0);
+
+            // 日付
+            doc.setFontSize(12);
+            doc.text(requestDateStr, 444.5, 135.0);
+
+            // 請求先
+            doc.setFontSize(14);
+            doc.text('（ 請 求 先 ）', 53.0, 147.0);
+
+            // 宛先
+            doc.setFontSize(12);
+            doc.text(cityName + '　殿', 194.6, 219.0);
+
+            // 請求事業者ブロック（右側）
+            doc.setLineWidth(LW_THICK);
+            doc.line(320.0, 185.0, 320.0, 345.0);
+            doc.line(320.0, 205.0, 550.0, 205.0);
+            doc.line(320.0, 257.0, 550.0, 257.0);
+            doc.line(320.0, 270.0, 550.0, 270.0);
+            doc.line(320.0, 315.0, 550.0, 315.0);
+
+            // 請（縦書き）
+            doc.setFontSize(12);
+            ['請','求','事','業','者'].forEach((ch,i) => doc.text(ch, 305.0, 225+i*18));
+
+            // 指定事業所番号
+            doc.setFontSize(10);
+            doc.text('指定事業所番号', 326.3, 189.0);
+            const fbX = 374, fbY = 185, fbW = 18, fbH = 20;
+            doc.setLineWidth(LW_THIN);
+            for(let i=0;i<10;i++) {
+                doc.rect(fbX + i*fbW, fbY, fbW, fbH);
+                doc.text(facNoStr[i]||' ', fbX+i*fbW+fbW/2, fbY+14, {align:'center'});
+            }
+
+            // 住所
+            doc.setFontSize(12);
+            doc.text('住　所', 335.9, 219.0);
+            doc.text('（所在地）', 335.9, 231.0);
+            doc.text(`〒${f.facilityZip||''}`, 403.2, 207.0);
+            doc.text(f.facilityAddress||'', 403.6, 222.0);
+            doc.text('電話番号', 338.7, 258.0);
+            doc.text(f.tel||f.facilityTel||'', 403.6, 258.0);
+            doc.text('名　称', 342.7, 273.0);
+            doc.text((f.corporationName||'')+ ' '+(f.facilityName||''), 403.6, 280.0);
+            doc.text('職・氏名', 339.6, 321.0);
+            doc.text((f.directorTitle||'')+' '+(f.directorName||''), 403.6, 324.0);
+
+            // 下記のとおり
+            doc.setFontSize(12);
+            doc.text('下記のとおり請求します。', 50.0, 315.0);
+
+            // 対象年月
+            doc.text(ymDisp, 55.3, 363.0);
+
+            // 請求金額
+            doc.setLineWidth(LW_THICK);
+            doc.line(50.0, 453.0, 550.0, 453.0);
+
+            doc.setFontSize(8);
+            doc.text('百万', 215.0, 393.0);
+            doc.text('千', 248.0, 393.0);
+            doc.text('円', 280.0, 393.0);
+            doc.setFontSize(12);
+            doc.text('請求金額', 70.0, 402.0);
+            doc.text('¥', 150.0, 402.0);
+            doc.setFontSize(12);
+            doc.text(n(grandTotal), 350.0, 402.0, {align:'right'});
+
+            // 表ヘッダ
+            doc.setFontSize(12);
+            doc.text('区　　　　分', 125.2, 435.0);
+            doc.setFontSize(10);
+            doc.text('件数', 262.7, 438.0);
+            doc.text('単位数', 330.0, 438.0);
+            doc.text('費用合計', 375.0, 435.0);
+            doc.setFontSize(9);
+            doc.text('給付費', 413.0, 432.0);
+            doc.text('請求額', 413.0, 441.0);
+            doc.text('利用者', 463.0, 432.0);
+            doc.text('負担額', 463.0, 441.0);
+            doc.text('自治体', 510.0, 432.0);
+            doc.text('助成額', 510.0, 441.0);
+
+            // 介護給付費縦書き
+            doc.setFontSize(11);
+            ['介','護','給','付','費'].forEach((ch,i) => doc.text(ch, 60.0, 483+i*18));
+
+            // 訓練等給付費縦書き + 共同生活援助行
+            ['訓','練','等','給','付','費'].forEach((ch,i) => doc.text(ch, 60.0, 609+i*18));
+            doc.text('共同生活援助', 70.0, 597.0);
+            doc.text(String(cityUsers.length), 262.7, 597.0, {align:'center'});
+            doc.text(n(totalUnits), 350.0, 597.0, {align:'right'});
+            doc.text(n(totalCost), 408.0, 597.0, {align:'right'});
+            doc.text(n(totalCost), 460.0, 597.0, {align:'right'});
+            doc.text('0', 510.0, 597.0, {align:'right'});
+            doc.text('0', 550.0, 597.0, {align:'right'});
+
+            // 地支援縦書き
+            doc.setFontSize(8);
+            ['地支','域援','相給','談付','　費'].forEach((s,i) => doc.text(s, 56.0, 675+i*15));
+
+            // 水平線
+            doc.setLineWidth(LW_THICK);
+            [733, 753].forEach(y => doc.line(50.0, y, 550.0, y));
+
+            // 小計行
+            doc.setFontSize(11);
+            doc.text('小　　　　計', 132.3, 717.0);
+            doc.text(String(cityUsers.length), 262.7, 717.0, {align:'center'});
+            doc.text(n(totalUnits), 350.0, 717.0, {align:'right'});
+            doc.text(n(totalCost), 408.0, 717.0, {align:'right'});
+            doc.text(n(totalCost), 460.0, 717.0, {align:'right'});
+            doc.text('0', 510.0, 717.0, {align:'right'});
+            doc.text('0', 550.0, 717.0, {align:'right'});
+
+            // 特定障害者特別給付費行
+            doc.text('特定障害者特別給付費', 104.9, 738.0);
+            doc.text(String(cityUsers.length), 262.7, 738.0, {align:'center'});
+            doc.text(n(totalTokutei), 408.0, 738.0, {align:'right'});
+            doc.text(n(totalTokutei), 460.0, 738.0, {align:'right'});
+
+            // 合計行
+            doc.setFontSize(12);
+            doc.text('合　　　計', 134.3, 756.0);
+            doc.setFontSize(10);
+            doc.text(String(cityUsers.length*2), 262.7, 759.0, {align:'center'});
+            doc.text(n(totalUnits), 350.0, 759.0, {align:'right'});
+            doc.text(n(grandTotal), 408.0, 759.0, {align:'right'});
+            doc.text(n(grandTotal), 460.0, 759.0, {align:'right'});
+            doc.text('0', 510.0, 759.0, {align:'right'});
+            doc.text('0', 550.0, 759.0, {align:'right'});
+
+            // 縦罫線（表）
+            doc.setLineWidth(LW_THIN);
+            [80, 248, 320, 390, 450, 500].forEach(x => doc.line(x, 453.0, x, 770.0));
+        }
+
         // ── PDF生成メイン
         function generateSEPDF(year, mon, targetUsers) {
             const serviceYm = year + mon.padStart(2,'0');
@@ -4430,7 +5009,8 @@ window.onload = function() {
                 user._totalCost  = am.totalCost;
                 user._grantFee   = am.grantFee;
 
-                allPages.push(buildMeisaiHTML(user, cert, uc, am, building, serviceYm, details, totalUnits));
+                // jsPDF用に収集
+                allPages.push({user, cert, uc, am, building, details, totalUnits});
 
                 if (!cityGroups[cityCode]) cityGroups[cityCode] = [];
                 cityGroups[cityCode].push(user);
@@ -4438,24 +5018,548 @@ window.onload = function() {
 
             if (allPages.length === 0) { alert('実績データがある利用者が見つかりません'); return; }
 
-            // 請求書を自治体別に追加
-            Object.entries(cityGroups).forEach(([cityCode, cityUsers]) => {
-                allPages.push(buildSeikyuHTML(cityCode, cityUsers, serviceYm));
+            // jsPDFでPDFを生成
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation:'portrait', unit:'pt', format:'a4' });
+
+            // 日本語フォントを読み込み（CDNからIPAMincho）
+            // jsPDFは標準でUnicodeをサポートしないため、Helveticaフォールバックで描画
+            // 実用上はブラウザのprint方式を改良する
+            // フォント: jsPDFはデフォルトでHelveticaのみ。日本語用にはフォント埋め込みが必要
+            // → 代替: HTML Canvas経由でPDF生成（html2canvas + jsPDF）ではなく
+            //   openPrintWindowの改良版（印刷CSS精密化）で対応
+
+            // ※ jsPDFのみでは日本語フォントが埋め込めないため、
+            //   高品質なprint方式（CSS精密制御）に切り替え
+            const seStyle = `
+                @page { size:A4 portrait; margin:0; }
+                * { box-sizing:border-box; margin:0; padding:0; }
+                body { font-family:"MS Mincho","MS 明朝","IPAMincho","Hiragino Mincho ProN",serif; font-size:0; background:white; }
+                .gh-page { width:595pt; height:842pt; background:white; padding:35.8pt 35pt 35pt 35.8pt; page-break-after:always; position:relative; overflow:hidden; }
+                
+                /* タイトル */
+                .p-title-small { position:absolute; left:31.6pt; top:24.6pt; font-size:12pt; }
+                .p-title-main { position:absolute; left:50%; transform:translateX(-50%); top:56pt; font-size:12pt; font-weight:bold; white-space:nowrap; }
+                .p-subtitle { position:absolute; left:50%; transform:translateX(-50%); top:72pt; font-size:10pt; white-space:nowrap; }
+                .p-nengetsu { position:absolute; right:35pt; top:96pt; font-size:9pt; }
+
+                /* テーブル共通 */
+                table { border-collapse:collapse; position:absolute; }
+                td { font-size:9pt; vertical-align:middle; overflow:hidden; }
+                
+                /* 太線クラス */
+                .bdr-t { border-top:1.8pt solid #000 !important; }
+                .bdr-b { border-bottom:1.8pt solid #000 !important; }
+                .bdr-l { border-left:1.8pt solid #000 !important; }
+                .bdr-r { border-right:1.8pt solid #000 !important; }
+                
+                /* 市町村番号エリア */
+                .tbl-city { left:35.8pt; top:90pt; width:190pt; }
+                .tbl-city td { border:0.9pt solid #000; height:30pt; text-align:center; font-size:10pt; width:20pt; }
+                .tbl-city .lbl { text-align:left; font-size:9pt; white-space:nowrap; border:none; border-bottom:0.9pt solid #000; width:70pt; padding-left:2pt; }
+                
+                /* 事業所番号エリア（右側）*/
+                .tbl-fac { right:35pt; top:90pt; }
+                .tbl-fac td { border:0.9pt solid #000; height:20pt; text-align:center; font-size:10pt; width:18pt; }
+                .tbl-fac .lbl { font-size:9pt; text-align:left; padding:1pt 2pt; border:0.9pt solid #000; }
+
+                /* 受給者証番号 */
+                .tbl-cert { left:35.8pt; top:136pt; width:240pt; }
+                .tbl-cert td { border:0.9pt solid #000; height:20pt; text-align:center; font-size:10pt; width:15pt; }
+                .tbl-cert .lbl { text-align:left; font-size:9pt; white-space:nowrap; border:none; border-bottom:1.8pt solid #000; width:90pt; padding-left:2pt; }
+
+                /* 氏名エリア */
+                .tbl-name { left:35.8pt; top:156pt; width:240pt; }
+                .tbl-name td { border:0.9pt solid #000; font-size:10pt; padding:2pt 4pt; height:25pt; }
+                .tbl-name .lbl { background:#e8e8e8; font-size:9pt; white-space:nowrap; }
+
+                /* 地域区分 */
+                .tbl-area { left:355pt; top:190pt; }
+                .tbl-area td { border:0.9pt solid #000; font-size:10pt; padding:2pt 4pt; height:20pt; }
+                .tbl-area .lbl { background:#e8e8e8; font-size:9pt; }
+
+                /* 上限月額エリア */
+                .tbl-limit { left:35.8pt; top:216pt; width:530pt; }
+                .tbl-limit td { border:0.9pt solid #000; font-size:10pt; padding:2pt 4pt; height:25pt; }
+                .tbl-limit .lbl { background:#e8e8e8; font-size:9pt; white-space:nowrap; }
+                .tbl-limit .bdr-all { border:1.8pt solid #000; }
+
+                /* 管理事業所 */
+                .tbl-kanri { left:35.8pt; top:241pt; width:530pt; }
+                .tbl-kanri td { border:0.9pt solid #000; font-size:10pt; padding:2pt 4pt; height:20pt; }
+                .tbl-kanri .lbl { background:#e8e8e8; font-size:9pt; white-space:nowrap; }
+                .tbl-kanri .bdr-l-thick { border-left:1.8pt solid #000; }
+
+                /* サービス種別 */
+                .tbl-svctype { left:35.8pt; top:281pt; width:530pt; }
+                .tbl-svctype td { border:0.9pt solid #000; font-size:9pt; padding:1pt 3pt; height:20pt; }
+                .tbl-svctype .lbl { background:#e8e8e8; font-size:8pt; white-space:nowrap; }
+                .tbl-svctype .thick-r { border-right:1.8pt solid #000; }
+                .tbl-svctype .thick-b { border-bottom:1.8pt solid #000; }
+                .tbl-svctype .code-c { text-align:center; width:12pt; font-size:10pt; font-weight:bold; }
+
+                /* 給付費明細欄 */
+                .tbl-meisai { left:35.8pt; top:321pt; width:524pt; }
+                .tbl-meisai td { border:0.9pt solid #000; font-size:9pt; padding:1pt 3pt; height:15pt; }
+                .tbl-meisai .lbl { background:#e8e8e8; font-size:8pt; text-align:center; white-space:nowrap; }
+                .tbl-meisai .vr { writing-mode:vertical-rl; text-orientation:mixed; text-align:center; background:#e8e8e8; font-size:7pt; border:1.8pt solid #000; }
+                .tbl-meisai .thick-r { border-right:1.8pt solid #000; }
+                .tbl-meisai .thick-b { border-bottom:1.8pt solid #000; }
+                .tbl-meisai .c { text-align:center; }
+                .tbl-meisai .r { text-align:right; padding-right:3pt; }
+
+                /* 日中加算欄 */
+                .tbl-nicchu { left:35.8pt; top:496pt; width:524pt; }
+                .tbl-nicchu td { border:0.9pt solid #000; font-size:8pt; padding:1pt 3pt; height:18pt; }
+                .tbl-nicchu .lbl { background:#e8e8e8; font-size:7pt; white-space:nowrap; }
+                .tbl-nicchu .thick-r { border-right:1.8pt solid #000; }
+
+                /* 請求額集計欄 */
+                .tbl-seikyu { left:35.8pt; top:536pt; width:524pt; }
+                .tbl-seikyu td { border:0.9pt solid #000; font-size:9pt; padding:1pt 3pt; height:15pt; }
+                .tbl-seikyu .lbl { background:#e8e8e8; font-size:8pt; white-space:nowrap; }
+                .tbl-seikyu .vr { writing-mode:vertical-rl; text-orientation:mixed; text-align:center; background:#e8e8e8; font-size:7pt; border:1.8pt solid #000; }
+                .tbl-seikyu .thick-b { border-bottom:1.8pt solid #000; }
+                .tbl-seikyu .thick-r { border-right:1.8pt solid #000; }
+                .tbl-seikyu .r { text-align:right; padding-right:3pt; }
+
+                /* 特定障害者特別給付費 */
+                .tbl-tokutei { left:35.8pt; top:756pt; width:200pt; }
+                .tbl-tokutei td { border:1.8pt solid #000; font-size:9pt; padding:2pt 4pt; height:15pt; }
+                .tbl-tokutei .r { text-align:right; }
+
+                /* 請求書ページ */
+                .sk-title-small { position:absolute; left:50pt; top:66pt; font-size:12pt; }
+                .sk-title-main { position:absolute; left:50%; transform:translateX(-50%); top:93pt; font-size:16pt; font-weight:bold; white-space:nowrap; }
+                .sk-date { position:absolute; right:45pt; top:135pt; font-size:12pt; }
+                .sk-atesaki { position:absolute; left:50pt; top:147pt; font-size:14pt; }
+                .sk-city { position:absolute; left:50pt; top:219pt; font-size:12pt; }
+                .tbl-jigyosha { position:absolute; right:35pt; top:185pt; width:245pt; }
+                .tbl-jigyosha td { border:1.8pt solid #000; font-size:12pt; padding:2pt 4pt; height:22pt; }
+                .tbl-jigyosha .lbl { background:#e8e8e8; font-size:10pt; white-space:nowrap; }
+                .tbl-jigyosha .cnum { text-align:center; width:18pt; font-size:10pt; border:0.9pt solid #000; }
+                .tbl-shimei { position:absolute; left:50pt; top:315pt; font-size:12pt; }
+                .tbl-ym { position:absolute; left:50pt; top:353pt; }
+                .tbl-ym td { border:1.8pt solid #000; font-size:12pt; text-align:center; padding:4pt 6pt; min-width:16pt; }
+                .tbl-seikyu-amt { position:absolute; left:50pt; top:388pt; }
+                .tbl-seikyu-amt td { font-size:9pt; padding:1pt; }
+                .tbl-seikyu-main { position:absolute; left:50pt; top:423pt; width:500pt; }
+                .tbl-seikyu-main th { border:1.8pt solid #000; background:#e8e8e8; font-size:11pt; padding:4pt; text-align:center; }
+                .tbl-seikyu-main td { border:0.9pt solid #000; font-size:11pt; padding:3pt 5pt; height:25pt; }
+                .tbl-seikyu-main .vr { writing-mode:vertical-rl; font-size:11pt; border:1.8pt solid #000; text-align:center; }
+                .tbl-seikyu-main .thick-b { border-bottom:1.8pt solid #000; }
+                .tbl-seikyu-main .r { text-align:right; }
+                .tbl-seikyu-main .c { text-align:center; }
+            `;
+
+            // 明細書HTMLを構築（位置精度を高めた版）
+            const buildMeisaiHTMLv2 = (user, cert, uc, am, building, serviceYm, details, totalUnits) => {
+                const f = facility;
+                const reiwa = parseInt(serviceYm.substring(0,4)) - 2018;
+                const monNum = parseInt(serviceYm.substring(4,6));
+                const ymDisp = `令和${String(reiwa).padStart(2,'0')}年${String(monNum).padStart(2,'0')}月`;
+                const startW = cert.certValidFrom ? (() => {
+                    const cv = cert.certValidFrom.replace(/-/g,'');
+                    const y2 = parseInt(cv.substring(0,4)) - 2018;
+                    return `令和${String(y2).padStart(2,'0')}年${cv.substring(4,6)}月${cv.substring(6,8)}日`;
+                })() : '';
+                const cityCode = cert.certCityCode || '';
+                const certNo = certNo2 => certNo2.replace(/-/g,'').padStart(10,'0');
+                const certNoStr = certNo(cert.certNo||'');
+                const facNoStr = (f.facilityNumber||'').replace(/-/g,'').padStart(10,'0');
+                const cityNoStr = cityCode.replace(/-/g,'').padStart(6,'0');
+                const areaName = {'01':'一級地','02':'二級地','03':'三級地','04':'四級地','05':'五級地','06':'六級地','07':'七級地','20':'その他'}[f.areaCode||'01']||'その他';
+                const supportDisp = cert.certSupportLevel || '';
+                const burdenLimit = parseInt(cert.certBurdenLimit)||0;
+                const unitPriceDisp = ((GH_TANKA[f.areaCode||'01']||10.00)).toFixed(2);
+                const hosdays = uc.hospitalDays || 0;
+                const n = v => Number(v||0).toLocaleString('ja-JP');
+
+                // 明細行
+                const emptyNeeded = Math.max(3, 9 - details.length);
+                let detailRowsHTML = '';
+                details.forEach(d => {
+                    const codeStr = String(d.code).padStart(6,'0');
+                    detailRowsHTML += `<tr>
+                        <td style="width:125pt;font-size:8pt;">${d.name}</td>
+                        ${codeStr.split('').map(c=>`<td class="c" style="width:14pt;">${c}</td>`).join('')}
+                        <td class="r" style="width:37pt;">${d.unitsPer}</td>
+                        <td class="r" style="width:22pt;">${d.count}</td>
+                        <td class="r thick-r" style="width:55pt;">${d.total}</td>
+                        <td style="width:80pt;"></td>
+                    </tr>`;
+                });
+                for(let i=0;i<emptyNeeded;i++) {
+                    detailRowsHTML += `<tr><td colspan="16" style="height:15pt;"></td></tr>`;
+                }
+
+                return `<div class="gh-page">
+  <span class="p-title-small">（様式第三）</span>
+  <div class="p-title-main">訓練等給付費等明細書</div>
+  <div class="p-subtitle">（共同生活援助）</div>
+  <div class="p-nengetsu">${ymDisp}分</div>
+
+  <!-- 市町村番号 -->
+  <table class="tbl-city">
+    <tr>
+      <td class="lbl" rowspan="2">市町村番号</td>
+      ${cityNoStr.split('').map(c=>`<td>${c}</td>`).join('')}
+    </tr>
+    <tr>
+      ${Array(6).fill('<td>&nbsp;</td>').join('')}
+    </tr>
+    <tr><td class="lbl" colspan="7" style="font-size:8pt;">助成自治体番号</td></tr>
+    <tr>${Array(6).fill('<td>&nbsp;</td>').join('')}<td class="lbl" style="font-size:8pt;"></td></tr>
+  </table>
+
+  <!-- 指定事業所番号（右） -->
+  <table style="position:absolute;right:35pt;top:90pt;">
+    <tr>
+      <td class="lbl" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">指定事業所番号</td>
+      ${facNoStr.split('').map(c=>`<td style="border:0.9pt solid #000;width:18pt;height:20pt;text-align:center;font-size:10pt;">${c}</td>`).join('')}
+    </tr>
+    <tr>
+      <td style="border:0.9pt solid #000;font-size:8pt;padding:2pt;">事業者及びその事業所の名称</td>
+      <td colspan="10" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">${f.facilityName||''}</td>
+    </tr>
+    <tr>
+      <td style="border:0.9pt solid #000;font-size:9pt;padding:2pt;writing-mode:vertical-rl;text-align:center;" rowspan="3">請<br>求<br>事<br>業<br>者</td>
+      <td colspan="10" style="border:0.9pt solid #000;font-size:8pt;padding:2pt;">&nbsp;</td>
+    </tr>
+  </table>
+
+  <!-- 受給者証番号 -->
+  <table style="position:absolute;left:35.8pt;top:136pt;">
+    <tr>
+      <td style="border:none;font-size:9pt;padding:2pt;border-bottom:1.8pt solid #000;">受給者証番号</td>
+      ${certNoStr.split('').map(c=>`<td style="border:0.9pt solid #000;width:15pt;height:20pt;text-align:center;font-size:10pt;">${c}</td>`).join('')}
+    </tr>
+  </table>
+
+  <!-- 支給決定障害者等氏名 -->
+  <table style="position:absolute;left:35.8pt;top:156pt;width:240pt;">
+    <tr>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;">支給決定障害者等氏名</td>
+      <td colspan="3" style="border:0.9pt solid #000;font-size:10pt;padding:2pt;">${user.name||''}</td>
+    </tr>
+    <tr>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;">支給決定に係る障害児氏名</td>
+      <td colspan="3" style="border:0.9pt solid #000;height:20pt;"></td>
+    </tr>
+  </table>
+
+  <!-- 地域区分 -->
+  <table style="position:absolute;right:35pt;top:200pt;">
+    <tr>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;">地域区分</td>
+      <td style="border:0.9pt solid #000;font-size:10pt;padding:2pt 6pt;">${areaName}</td>
+    </tr>
+  </table>
+
+  <!-- 利用者負担上限月額 -->
+  <table style="position:absolute;left:35.8pt;top:215pt;width:524pt;">
+    <tr>
+      <td style="border:1.8pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;">利用者負担上限月額　①</td>
+      <td style="border:1.8pt solid #000;font-size:10pt;text-align:right;padding-right:4pt;width:60pt;">${n(burdenLimit)}</td>
+      <td style="border:none;width:15pt;"></td>
+      <td style="border:1.8pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;">障害支援区分</td>
+      <td style="border:1.8pt solid #000;font-size:10pt;padding:2pt 6pt;flex:1;">${supportDisp}</td>
+    </tr>
+  </table>
+
+  <!-- 管理事業所 -->
+  <table style="position:absolute;left:35.8pt;top:240pt;width:524pt;">
+    <tr>
+      <td rowspan="2" style="border:1.8pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;">利用者負担上限額<br>管理事業所</td>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;">指定事業所番号</td>
+      <td colspan="3" style="border:0.9pt solid #000;width:60pt;"></td>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;white-space:nowrap;">管理結果</td>
+      <td colspan="2" style="border:0.9pt solid #000;width:30pt;"></td>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;white-space:nowrap;">管理結果額</td>
+      <td colspan="2" style="border:0.9pt solid #000;flex:1;"></td>
+    </tr>
+    <tr>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;">事業所名称</td>
+      <td colspan="9" style="border:0.9pt solid #000;height:18pt;"></td>
+    </tr>
+  </table>
+
+  <!-- サービス種別 -->
+  <table style="position:absolute;left:35.8pt;top:278pt;width:524pt;">
+    <tr>
+      <td rowspan="2" style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;text-align:center;width:40pt;padding:2pt;white-space:nowrap;">サービス<br>種別</td>
+      <td style="border:1.8pt solid #000;text-align:center;width:12pt;font-size:10pt;font-weight:bold;">3</td>
+      <td style="border:1.8pt solid #000;text-align:center;width:12pt;font-size:10pt;font-weight:bold;">3</td>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;padding:2pt;white-space:nowrap;">開始年月日</td>
+      <td colspan="4" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">${startW}</td>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">終了年月日</td>
+      <td colspan="3" style="border:0.9pt solid #000;width:45pt;"></td>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">入院日数</td>
+      <td style="border:0.9pt solid #000;width:20pt;text-align:center;">${hosdays||''}</td>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">外泊日数</td>
+      <td style="border:0.9pt solid #000;width:20pt;"></td>
+    </tr>
+    <tr>
+      <td colspan="2" style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
+      <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">開始年月日</td>
+      <td colspan="4" style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
+      <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
+      <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">終了年月日</td>
+      <td colspan="3" style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
+      <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">入院日数</td>
+      <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
+      <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">外泊日数</td>
+      <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
+    </tr>
+  </table>
+
+  <!-- 給付費明細欄 -->
+  <table class="tbl-meisai">
+    <thead>
+      <tr>
+        <td class="vr" rowspan="${details.length + emptyNeeded + 1}" style="width:15pt;">給付費明細欄</td>
+        <td class="lbl" style="width:125pt;">サービス内容</td>
+        <td class="lbl thick-r" colspan="6">サービスコード</td>
+        <td class="lbl thick-r" colspan="3">単位数</td>
+        <td class="lbl thick-r" colspan="2">回数</td>
+        <td class="lbl thick-r" colspan="4">サービス単位</td>
+        <td class="lbl">摘要</td>
+      </tr>
+    </thead>
+    <tbody>${detailRowsHTML}</tbody>
+  </table>
+
+  <!-- 日中介護等支援加算欄 -->
+  <table class="tbl-nicchu">
+    <tr>
+      <td rowspan="2" class="lbl" style="width:45pt;font-size:6pt;">日中介護等<br>支援加算欄</td>
+      <td rowspan="2" class="lbl thick-r" style="width:55pt;font-size:7pt;">日中活動先事業所</td>
+      <td class="lbl" style="white-space:nowrap;">指定事業所番号</td>
+      <td colspan="4" style="width:80pt;"></td>
+      <td class="lbl thick-r" colspan="2" style="font-size:7pt;">当該事業所への通所日数</td>
+      <td colspan="2"></td>
+    </tr>
+    <tr>
+      <td class="lbl">事業所名称</td>
+      <td colspan="9"></td>
+    </tr>
+  </table>
+
+  <!-- 請求額集計欄 -->
+  <table class="tbl-seikyu">
+    <tr>
+      <td class="vr" rowspan="13" style="width:15pt;">請求額集計欄</td>
+      <td class="lbl" style="width:140pt;">サービス種類コード</td>
+      <td style="text-align:center;width:14pt;font-size:10pt;font-weight:bold;">3</td>
+      <td style="text-align:center;width:14pt;font-size:10pt;font-weight:bold;">3</td>
+      <td colspan="5"></td>
+      <td class="lbl">合計</td>
+      <td colspan="5"></td>
+    </tr>
+    <tr>
+      <td class="lbl">サービス利用日数</td>
+      <td class="r" colspan="2">${uc.serviceDays}</td>
+      <td class="lbl" colspan="2">日</td>
+      <td colspan="5"></td>
+      <td class="lbl" colspan="2">日</td>
+      <td colspan="2"></td>
+    </tr>
+    <tr><td class="lbl">給付単位数</td><td class="r" colspan="5">${n(totalUnits)}</td><td colspan="3"></td><td class="r" colspan="5">${n(totalUnits)}</td></tr>
+    <tr><td class="lbl">単位数単価</td><td class="r" colspan="5">${unitPriceDisp}</td><td class="lbl" colspan="2" style="font-size:7pt;">円/単位</td><td colspan="3"></td><td style="font-size:7pt;" colspan="2">円/単位</td><td colspan="2"></td></tr>
+    <tr class="thick-b"><td class="lbl">総費用額</td><td class="r" colspan="5">${n(am.totalCost)}</td><td colspan="3"></td><td class="r" colspan="5">${n(am.totalCost)}</td></tr>
+    <tr><td class="lbl">１割相当額</td><td class="r" colspan="5">${n(Math.floor(am.totalCost*0.1))}</td><td colspan="8"></td></tr>
+    <tr><td class="lbl">利用者負担額②</td><td class="r" colspan="5">${n(am.userBurden)}</td><td colspan="8"></td></tr>
+    <tr class="thick-b"><td class="lbl" style="font-size:7pt;">上限月額調整(①②の内少ない数)</td><td class="r" colspan="5">0</td><td colspan="3"></td><td class="r" colspan="5">0</td></tr>
+    <tr class="thick-b"><td class="lbl">調整後利用者負担額</td><td colspan="13"></td></tr>
+    <tr class="thick-b"><td class="lbl">上限額管理後利用者負担額</td><td colspan="13"></td></tr>
+    <tr class="thick-b"><td class="lbl">決定利用者負担額</td><td class="r" colspan="5">0</td><td colspan="3"></td><td class="r" colspan="5">0</td></tr>
+    <tr class="thick-b">
+      <td class="lbl">請求額</td>
+      <td class="lbl" style="width:50pt;">給付費</td>
+      <td class="r" colspan="4">${n(am.grantFee)}</td>
+      <td colspan="3"></td>
+      <td class="r" colspan="5">${n(am.grantFee)}</td>
+    </tr>
+    <tr><td class="lbl" colspan="2">自治体助成分請求額</td><td colspan="12"></td></tr>
+  </table>
+
+  <!-- 特定障害者特別給付費 -->
+  <table class="tbl-tokutei">
+    <tr><td colspan="2" class="lbl" style="border:1.8pt solid #000;">特定障害者特別給付費</td><td colspan="2" style="border:0.9pt solid #000;"></td></tr>
+    <tr>
+      <td class="lbl" style="border:1.8pt solid #000;">給付費請求額</td>
+      <td class="lbl" style="border:1.8pt solid #000;">実費算定額</td>
+      <td colspan="2" style="border:0.9pt solid #000;"></td>
+    </tr>
+    <tr>
+      <td class="r" style="border:1.8pt solid #000;">10,000</td>
+      <td class="r" style="border:1.8pt solid #000;">10,000</td>
+      <td colspan="2" style="border:0.9pt solid #000;"></td>
+    </tr>
+  </table>
+</div>`;
+            };
+
+            // 請求書HTML（様式第一）
+            const buildSeikyuHTMLv2 = (cityCode, cityUsers, serviceYm) => {
+                const f2 = facility;
+                const reiwa = parseInt(serviceYm.substring(0,4)) - 2018;
+                const m = parseInt(serviceYm.substring(4,6));
+                const processY = (m===12) ? parseInt(serviceYm.substring(0,4))+1 : parseInt(serviceYm.substring(0,4));
+                const processM = (m===12) ? 1 : m+1;
+                const processReiwa = processY - 2018;
+                const requestDateStr = `令和 ${processReiwa}年 ${processM}月 20日`;
+                const cityNameMap = {
+                    "131024":"中央区長","131032":"港区長","131041":"新宿区長","131059":"文京区長",
+                    "131067":"台東区長","131075":"墨田区長","131083":"江東区長","131091":"品川区長",
+                    "131105":"目黒区長","131113":"大田区長","131121":"世田谷区長","131130":"渋谷区長",
+                    "131148":"中野区長","131156":"杉並区長","131164":"豊島区長","131172":"北区長",
+                    "131181":"荒川区長","131199":"板橋区長","131202":"練馬区長","131211":"足立区長",
+                    "131229":"葛飾区長","131237":"江戸川区長",
+                    "132012":"八王子市長","132021":"立川市長","132039":"武蔵野市長","132047":"三鷹市長",
+                    "132055":"青梅市長","132063":"府中市長","132071":"昭島市長","132080":"調布市長",
+                    "132098":"町田市長","132101":"小金井市長","132110":"小平市長","132128":"日野市長",
+                    "132136":"東村山市長","132144":"国分寺市長","132152":"国立市長",
+                };
+                const cityName = cityNameMap[cityCode] || cityCode + '長';
+                const facNoStr = (f2.facilityNumber||'').replace(/-/g,'').padStart(10,'0');
+                let totalUnits=0, totalCost=0;
+                cityUsers.forEach(u => { totalUnits += u._totalUnits||0; totalCost += u._totalCost||0; });
+                const totalTokutei = cityUsers.length * 10000;
+                const grandTotal = totalCost + totalTokutei;
+                const n = v => Number(v||0).toLocaleString('ja-JP');
+                const ymChars = `令 和 ${String(reiwa).padStart(2,'0')} 年 ${String(m).padStart(2,'0')} 月 分`;
+
+                return `<div class="gh-page">
+  <span class="sk-title-small">（様式第一）</span>
+  <div class="sk-title-main">介護給付費・訓練等給付費等請求書</div>
+  <div class="sk-date">${requestDateStr}</div>
+  <div class="sk-atesaki">（ 請 求 先 ）</div>
+  <div class="sk-city">${cityName}　殿</div>
+
+  <!-- 請求事業者ブロック -->
+  <table class="tbl-jigyosha">
+    <tr>
+      <td class="lbl" rowspan="5" style="writing-mode:vertical-rl;text-orientation:mixed;text-align:center;width:20pt;font-size:12pt;border:1.8pt solid #000;">請<br>求<br>事<br>業<br>者</td>
+      <td class="lbl" style="font-size:10pt;">指定事業所番号</td>
+      ${facNoStr.split('').map(c=>`<td class="cnum">${c}</td>`).join('')}
+    </tr>
+    <tr>
+      <td class="lbl">住　所<br>（所在地）</td>
+      <td colspan="10" style="border:1.8pt solid #000;font-size:11pt;">〒${f2.facilityZip||''}<br>${f2.facilityAddress||''}</td>
+    </tr>
+    <tr><td class="lbl">電話番号</td><td colspan="10" style="border:1.8pt solid #000;font-size:11pt;">${f2.tel||f2.facilityTel||''}</td></tr>
+    <tr><td class="lbl">名　称</td><td colspan="10" style="border:1.8pt solid #000;font-size:11pt;">${f2.corporationName||''} ${f2.facilityName||''}</td></tr>
+    <tr><td class="lbl">職・氏名</td><td colspan="10" style="border:1.8pt solid #000;font-size:11pt;">${f2.directorTitle||''} ${f2.directorName||''}</td></tr>
+  </table>
+
+  <div class="tbl-shimei">下記のとおり請求します。</div>
+
+  <!-- 対象年月 -->
+  <table class="tbl-ym" style="position:absolute;left:50pt;top:353pt;">
+    ${ymChars.split('').map(c=>`<td>${c==' '?'&nbsp;':c}</td>`).join('')}
+  </table>
+
+  <!-- 請求金額 -->
+  <table style="position:absolute;left:50pt;top:383pt;border-collapse:collapse;">
+    <tr>
+      <td style="font-size:12pt;border:1.8pt solid #000;background:#e8e8e8;padding:4pt 8pt;white-space:nowrap;">請求金額</td>
+      <td style="font-size:12pt;border:1.8pt solid #000;padding:4pt;background:#e8e8e8;text-align:center;">百万</td>
+      <td style="font-size:14pt;border:1.8pt solid #000;padding:4pt 8pt;text-align:right;min-width:120pt;font-weight:bold;">¥ ${n(grandTotal)}</td>
+      <td style="font-size:12pt;border:1.8pt solid #000;padding:4pt;background:#e8e8e8;">円</td>
+    </tr>
+  </table>
+
+  <!-- 請求明細表 -->
+  <table class="tbl-seikyu-main">
+    <thead>
+      <tr>
+        <th colspan="3">区　　　　分</th>
+        <th>件数</th>
+        <th>単位数</th>
+        <th>費用合計</th>
+        <th>給付費<br>請求額</th>
+        <th>利用者<br>負担額</th>
+        <th>自治体<br>助成額</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="vr thick-b" rowspan="7" style="width:20pt;">介護給付費</td>
+        <td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td>
+        <td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td>
+        <td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td>
+        <td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td>
+      </tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+
+      <tr>
+        <td class="vr thick-b" rowspan="4" style="width:20pt;">訓練等給付費</td>
+        <td colspan="2" style="border:0.9pt solid #000;padding:2pt 4pt;">共同生活援助</td>
+        <td class="r" style="border:0.9pt solid #000;">${cityUsers.length}</td>
+        <td class="r" style="border:0.9pt solid #000;">${n(totalUnits)}</td>
+        <td class="r" style="border:0.9pt solid #000;">${n(totalCost)}</td>
+        <td class="r" style="border:0.9pt solid #000;">${n(totalCost)}</td>
+        <td class="r" style="border:0.9pt solid #000;">0</td>
+        <td class="r" style="border:0.9pt solid #000;">0</td>
+      </tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+
+      <tr>
+        <td class="vr" rowspan="2" style="width:20pt;font-size:8pt;">地域支援給付費</td>
+        <td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td>
+        <td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td>
+      </tr>
+      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+
+      <tr>
+        <td colspan="3" class="c" style="border:1.8pt solid #000;font-weight:bold;background:#e8e8e8;">小　　　計</td>
+        <td class="r" style="border:1.8pt solid #000;">${cityUsers.length}</td>
+        <td class="r" style="border:1.8pt solid #000;">${n(totalUnits)}</td>
+        <td class="r" style="border:1.8pt solid #000;">${n(totalCost)}</td>
+        <td class="r" style="border:1.8pt solid #000;">${n(totalCost)}</td>
+        <td class="r" style="border:1.8pt solid #000;">0</td>
+        <td class="r" style="border:1.8pt solid #000;">0</td>
+      </tr>
+      <tr>
+        <td colspan="3" class="c" style="border:1.8pt solid #000;background:#e8e8e8;">特定障害者特別給付費</td>
+        <td class="r" style="border:1.8pt solid #000;">${cityUsers.length}</td>
+        <td style="border:1.8pt solid #000;"></td>
+        <td class="r" style="border:1.8pt solid #000;">${n(totalTokutei)}</td>
+        <td class="r" style="border:1.8pt solid #000;">${n(totalTokutei)}</td>
+        <td style="border:none;"></td><td style="border:none;"></td>
+      </tr>
+      <tr>
+        <td colspan="3" class="c" style="border:1.8pt solid #000;font-weight:bold;background:#e8e8e8;font-size:12pt;">合　　　計</td>
+        <td class="r" style="border:1.8pt solid #000;">${cityUsers.length*2}</td>
+        <td class="r" style="border:1.8pt solid #000;">${n(totalUnits)}</td>
+        <td class="r" style="border:1.8pt solid #000;">${n(grandTotal)}</td>
+        <td class="r" style="border:1.8pt solid #000;">${n(grandTotal)}</td>
+        <td class="r" style="border:1.8pt solid #000;">0</td>
+        <td class="r" style="border:1.8pt solid #000;">0</td>
+      </tr>
+    </tbody>
+  </table>
+</div>`;
+            };
+
+            // HTMLページ収集
+            const htmlPages = [];
+            allPages.forEach(p => {
+                htmlPages.push(buildMeisaiHTMLv2(p.user, p.cert, p.uc, p.am, p.building, serviceYm, p.details, p.totalUnits));
+            });
+            Object.entries(cityGroups).forEach(([cc, cu]) => {
+                htmlPages.push(buildSeikyuHTMLv2(cc, cu, serviceYm));
             });
 
-            const seStyle = `
-                body { font-family: "MS Gothic","Meiryo",monospace; margin:0; font-size:8.5pt; }
-                .gh-page { width:210mm; min-height:297mm; background:white; box-sizing:border-box; padding:8mm 10mm; page-break-after:always; }
-                .gh-title { text-align:center; font-size:12pt; font-weight:bold; margin-bottom:2mm; letter-spacing:0.05em; }
-                .gh-subtitle { text-align:center; font-size:9.5pt; margin-bottom:1.5mm; }
-                .gh-nengetsu { text-align:right; font-size:9pt; margin-bottom:1.5mm; }
-                .gh-tbl { border-collapse:collapse; width:100%; border:2px solid #000; }
-                .gh-tbl td { border:1.5px solid #000; padding:2px 3px; vertical-align:middle; line-height:1.4; }
-                .gh-lbl { background:#e8e8e8; font-size:7pt; white-space:nowrap; font-weight:bold; }
-                .gh-c { text-align:center; width:5.5mm; min-width:4.5mm; font-size:8.5pt; border:1.5px solid #000; }
-                .center { text-align:center; } .right { text-align:right; } .left { text-align:left; }
-            `;
-            openPrintWindow(allPages.join('\n'), seStyle, 'A4', 'portrait');
+            openPrintWindow(htmlPages.join('\n'), seStyle, 'A4', 'portrait');
             document.getElementById('exportStatus').innerHTML =
                 '<div class="alert alert-success">✅ 印刷ダイアログが開きます。送信先で <strong>「PDFに保存」</strong> を選択してください。<br><span style="font-size:0.85em;color:#555;">ファイル名を <code>SE' + year + mon.padStart(2,'0') + '_帳票.pdf</code> にすることをおすすめします。</span></div>';
         }
@@ -5069,16 +6173,16 @@ window.onload = function() {
             const docHtml = `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
 <title>SV帳票 ${year}年${mon}月分</title>
 <style>
-body { font-family: "MS Gothic","Meiryo",monospace; margin:0; background:white; font-size:8.5pt; }
+body { font-family: "MS Gothic","Meiryo",monospace; margin:0; background:white; font-size:8pt; }
 .sv-page { width:297mm; min-height:210mm; background:white; box-sizing:border-box; padding:5mm 8mm; page-break-after:always; position:relative; }
-.sv-tbl { border-collapse:collapse; width:100%; border:2px solid #000; }
-.sv-tbl td { border:1.5px solid #000; padding:2px 3px; vertical-align:middle; line-height:1.4; font-size:7.5pt; }
-.sv-lbl { background:#e8e8e8; font-size:6pt; font-weight:bold; }
-.sv-nc { text-align:center; width:4.5mm; font-size:8pt; }
-.sv-day { text-align:center; font-size:8.5pt; font-weight:bold; width:7mm; }
-.sv-dow { text-align:center; font-size:8.5pt; }
-.sv-cell { text-align:center; font-size:7.5pt; }
-.sv-night { text-align:center; font-size:8.5pt; font-weight:bold; }
+.sv-tbl { border-collapse:collapse; width:100%; }
+.sv-tbl td { border:1px solid #000; padding:1px 2px; vertical-align:middle; line-height:1.2; font-size:7pt; }
+.sv-lbl { background:#f5f5f5; font-size:5.5pt; }
+.sv-nc { text-align:center; width:4.5mm; font-size:7.5pt; }
+.sv-day { text-align:center; font-size:8pt; font-weight:bold; width:7mm; }
+.sv-dow { text-align:center; font-size:8pt; }
+.sv-cell { text-align:center; font-size:7pt; }
+.sv-night { text-align:center; font-size:8pt; font-weight:bold; }
 .sv-sign { }
 .sv-biko { }
 .center { text-align:center; }
@@ -5088,16 +6192,16 @@ ${allPages.join('\n')}
 </body></html>`;
 
             const svStyle = `
-                body { font-family: "MS Gothic","Meiryo",monospace; margin:0; font-size:8.5pt; }
+                body { font-family: "MS Gothic","Meiryo",monospace; margin:0; font-size:8pt; }
                 .sv-page { width:297mm; min-height:210mm; background:white; box-sizing:border-box; padding:5mm 8mm; page-break-after:always; position:relative; }
-                .sv-tbl { border-collapse:collapse; width:100%; border:2px solid #000; }
-                .sv-tbl td { border:1.5px solid #000; padding:2px 3px; vertical-align:middle; line-height:1.4; font-size:7.5pt; }
-                .sv-lbl { background:#e8e8e8; font-size:6pt; font-weight:bold; }
-                .sv-nc { text-align:center; width:4.5mm; font-size:8pt; }
-                .sv-day { text-align:center; font-size:8.5pt; font-weight:bold; width:7mm; }
-                .sv-dow { text-align:center; font-size:8.5pt; }
-                .sv-cell { text-align:center; font-size:7.5pt; }
-                .sv-night { text-align:center; font-size:8.5pt; font-weight:bold; }
+                .sv-tbl { border-collapse:collapse; width:100%; }
+                .sv-tbl td { border:1px solid #000; padding:1px 2px; vertical-align:middle; line-height:1.2; font-size:7pt; }
+                .sv-lbl { background:#f5f5f5; font-size:5.5pt; }
+                .sv-nc { text-align:center; width:4.5mm; font-size:7.5pt; }
+                .sv-day { text-align:center; font-size:8pt; font-weight:bold; width:7mm; }
+                .sv-dow { text-align:center; font-size:8pt; }
+                .sv-cell { text-align:center; font-size:7pt; }
+                .sv-night { text-align:center; font-size:8pt; font-weight:bold; }
                 .sv-sign { } .sv-biko { } .center { text-align:center; }
             `;
             openPrintWindow(allPages.join('\n'), svStyle, 'A4', 'landscape');
