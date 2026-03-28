@@ -1082,7 +1082,50 @@
                 </div>
 
                 <!-- 期間限定算定情報 -->
-                <div id="facility-limited" class="building-detail-panel"></div>
+                <div id="facility-limited" class="building-detail-panel">
+                <h2 class="section-header">期間限定算定情報</h2>
+
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+                    <label style="font-weight:600;">サービス提供年月</label>
+                    <select id="limitedPeriodMonth" style="padding:6px 12px; border:1px solid #ddd; border-radius:6px; font-size:0.95em;"></select>
+                </div>
+
+                <p style="color:#e67e22; font-size:0.9em; margin-bottom:16px;">※ 月途中で算定情報が変更になる場合のみ登録してください。</p>
+
+                <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
+                    <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;">＋ 新規登録</button>
+                </div>
+
+                <table style="width:100%; border-collapse:collapse; font-size:0.9em;">
+                    <thead>
+                        <tr style="border-bottom:2px solid #ddd; background:#f8f9fa;">
+                            <th style="text-align:left; padding:10px 12px; color:#555;">期間</th>
+                            <th style="text-align:left; padding:10px 12px; color:#555;">算定情報</th>
+                        </tr>
+                    </thead>
+                    <tbody id="limitedPeriodTableBody">
+                        <tr>
+                            <td colspan="2" style="padding:20px; text-align:center; color:#aaa;">データなし</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <script>
+                (function() {
+                    const sel = document.getElementById('limitedPeriodMonth');
+                    const now = new Date();
+                    for (let i = 0; i < 60; i++) {
+                        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const opt = document.createElement('option');
+                        opt.value = `${y}-${m}`;
+                        opt.textContent = `${y}年${m}月`;
+                        sel.appendChild(opt);
+                    }
+                })();
+                </script>
+                </div>
 
                 <!-- 履歴情報 -->
                 <div id="facility-history" class="building-detail-panel"></div>
