@@ -736,6 +736,18 @@
                         </div>
                     </div>
 
+                    <div style="margin-top: 30px;">
+                        <button type="submit" class="btn btn-primary">💾 保存</button>
+                    </div>
+                </form>
+
+                <div id="facilityInfo" style="margin-top: 40px;"></div>
+                </div><!-- /#facility-basic -->
+
+                <!-- 算定情報 -->
+                <div id="facility-calculation" class="building-detail-panel">
+                <h2 class="section-header">算定情報</h2>
+                <form id="facilityCalcForm">
                     <div class="form-group">
                         <label>入員配置体制</label>
                         <select id="residentialCareSystem">
@@ -1063,17 +1075,11 @@
                             </div>
                         </div>
                     </div>
-
                     <div style="margin-top: 30px;">
                         <button type="submit" class="btn btn-primary">💾 保存</button>
                     </div>
                 </form>
-
-                <div id="facilityInfo" style="margin-top: 40px;"></div>
-                </div><!-- /#facility-basic -->
-
-                <!-- 算定情報 -->
-                <div id="facility-calculation" class="building-detail-panel"></div>
+                </div>
 
                 <!-- 期間限定算定情報 -->
                 <div id="facility-limited" class="building-detail-panel"></div>
@@ -2009,9 +2015,7 @@
             }
         }
 
-        document.getElementById('facilityForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            
+        function saveFacilityData() {
             facility = {
                 facilityNumber: document.getElementById('facilityNumber').value,
                 facilityName: document.getElementById('facilityName').value,
@@ -2058,9 +2062,18 @@
             });
 
             localStorage.setItem('gh_facility', JSON.stringify(facility));
-            
             displayFacilityInfo();
             alert('✅ 事業所情報を保存しました！');
+        }
+
+        document.getElementById('facilityForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveFacilityData();
+        });
+
+        document.getElementById('facilityCalcForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveFacilityData();
         });
 
         function displayFacilityInfo() {
