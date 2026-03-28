@@ -1101,13 +1101,10 @@
                         <tr style="border-bottom:2px solid #ddd; background:#f8f9fa;">
                             <th style="text-align:left; padding:10px 12px; color:#555;">期間</th>
                             <th style="text-align:left; padding:10px 12px; color:#555;">算定情報</th>
+                            <th style="width:140px; padding:10px 12px; color:#555;">操作</th>
                         </tr>
                     </thead>
-                    <tbody id="limitedPeriodTableBody">
-                        <tr>
-                            <td colspan="2" style="padding:20px; text-align:center; color:#aaa;">データなし</td>
-                        </tr>
-                    </tbody>
+                    <tbody id="limitedPeriodTableBody"></tbody>
                 </table>
 
                 <script>
@@ -1803,6 +1800,7 @@
             </div>
             <p style="color:#e67e22; font-size:0.88em; margin-bottom:20px;">※ 月途中で算定情報が変更になる場合のみ登録してください。</p>
             <form id="limitedModalForm" onsubmit="saveLimitedEntry(event)">
+                <input type="hidden" id="limitedEditId" value="">
                 <div class="form-group">
                     <label>期間</label>
                     <div style="display:flex; align-items:center; gap:8px;">
@@ -2030,6 +2028,7 @@
             renderUserList();
             updateUserSelector();
             updateCalendar();
+            renderLimitedTable();
             updateUnitOptions();
             displayFacilityInfo();
             
@@ -2110,8 +2109,45 @@
             }
         }
 
-        function openLimitedModal() {
+        // ========== 期間限定算定情報 ==========
+        let limitedEntries = JSON.parse(localStorage.getItem('gh_limited_entries') || '[]');
+
+        function renderLimitedTable() {
+            const tbody = document.getElementById('limitedPeriodTableBody');
+            if (!tbody) return;
+            if (limitedEntries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="padding:20px; text-align:center; color:#aaa;">データなし</td></tr>';
+                return;
+            }
+            tbody.innerHTML = limitedEntries.map(entry => {
+                const periodText = entry.start && entry.end ? `${entry.start} 〜 ${entry.end}`
+                                 : entry.start || entry.end || '期間未設定';
+                const calcParts = [entry.care, entry.ratio && `人員配置体制: ${entry.ratio}`, entry.medical].filter(Boolean);
+                const calcText = calcParts.length ? calcParts.join('、') : '（設定なし）';
+                return `<tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:10px 12px;">${periodText}</td>
+                    <td style="padding:10px 12px;">${calcText}</td>
+                    <td style="padding:8px 12px; white-space:nowrap;">
+                        <button type="button" class="btn btn-secondary" style="padding:4px 10px; font-size:0.82em; margin-right:4px;" onclick="openLimitedModal('${entry.id}')">詳細</button>
+                        <button type="button" class="btn btn-secondary" style="padding:4px 10px; font-size:0.82em; background:#f44336; border-color:#f44336; color:white;" onclick="deleteLimitedEntry('${entry.id}')">削除</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function openLimitedModal(id) {
             document.getElementById('limitedModalForm').reset();
+            document.getElementById('limitedEditId').value = id || '';
+            if (id) {
+                const entry = limitedEntries.find(e => e.id === id);
+                if (entry) {
+                    document.getElementById('limitedStartDate').value = entry.start || '';
+                    document.getElementById('limitedEndDate').value = entry.end || '';
+                    document.getElementById('limitedResidentialCare').value = entry.care || '';
+                    document.getElementById('limitedStaffRatio').value = entry.ratio || '';
+                    document.getElementById('limitedMedicalCooperation').value = entry.medical || '';
+                }
+            }
             document.getElementById('limitedModal').classList.add('active');
         }
 
@@ -2121,26 +2157,31 @@
 
         function saveLimitedEntry(e) {
             e.preventDefault();
-            const start = document.getElementById('limitedStartDate').value;
-            const end = document.getElementById('limitedEndDate').value;
-            const care = document.getElementById('limitedResidentialCare').value;
-            const ratio = document.getElementById('limitedStaffRatio').value;
-            const medical = document.getElementById('limitedMedicalCooperation').value;
-
-            const periodText = start && end ? `${start} 〜 ${end}` : start || end || '期間未設定';
-            const calcParts = [care, ratio && `人員配置体制: ${ratio}`, medical].filter(Boolean);
-            const calcText = calcParts.length ? calcParts.join('、') : '（設定なし）';
-
-            const tbody = document.getElementById('limitedPeriodTableBody');
-            const emptyRow = tbody.querySelector('td[colspan]');
-            if (emptyRow) emptyRow.closest('tr').remove();
-
-            const tr = document.createElement('tr');
-            tr.style.borderBottom = '1px solid #eee';
-            tr.innerHTML = `<td style="padding:10px 12px;">${periodText}</td><td style="padding:10px 12px;">${calcText}</td>`;
-            tbody.appendChild(tr);
-
+            const id = document.getElementById('limitedEditId').value;
+            const entry = {
+                id: id || Date.now().toString(),
+                start: document.getElementById('limitedStartDate').value,
+                end: document.getElementById('limitedEndDate').value,
+                care: document.getElementById('limitedResidentialCare').value,
+                ratio: document.getElementById('limitedStaffRatio').value,
+                medical: document.getElementById('limitedMedicalCooperation').value
+            };
+            if (id) {
+                const idx = limitedEntries.findIndex(e => e.id === id);
+                if (idx !== -1) limitedEntries[idx] = entry;
+            } else {
+                limitedEntries.push(entry);
+            }
+            localStorage.setItem('gh_limited_entries', JSON.stringify(limitedEntries));
+            renderLimitedTable();
             closeLimitedModal();
+        }
+
+        function deleteLimitedEntry(id) {
+            if (!confirm('削除しますか？')) return;
+            limitedEntries = limitedEntries.filter(e => e.id !== id);
+            localStorage.setItem('gh_limited_entries', JSON.stringify(limitedEntries));
+            renderLimitedTable();
         }
 
         document.getElementById('limitedModal').addEventListener('click', function(e) {
