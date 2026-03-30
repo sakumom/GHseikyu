@@ -1174,7 +1174,40 @@
                 </div>
 
                 <!-- 管理表 -->
-                <div id="facility-management" class="building-detail-panel"></div>
+                <div id="facility-management" class="building-detail-panel">
+                <h2 class="section-header">管理表</h2>
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+                    <!-- 左側: ダウンロード -->
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span style="width:60px; font-size:0.95em; color:#444;">売上</span>
+                            <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;" onclick="">ダウンロード</button>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <span style="width:60px; font-size:0.95em; color:#444;">稼働率</span>
+                            <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;" onclick="">ダウンロード</button>
+                        </div>
+                    </div>
+                    <!-- 右側: 更新日時・ボタン -->
+                    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:10px;">
+                        <div style="font-size:0.9em; color:#555;">
+                            更新日時: <span id="facilityMgmtUpdatedAt" style="font-weight:bold;"></span>
+                        </div>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;" onclick="">売上再計算</button>
+                            <button type="button" class="btn" style="background:#fff; border:1px solid #ccc; color:#444;" onclick="">一覧に戻る</button>
+                        </div>
+                    </div>
+                </div>
+                <script>
+                (function() {
+                    const now = new Date();
+                    const pad = n => String(n).padStart(2, '0');
+                    const formatted = `${now.getFullYear()}/${pad(now.getMonth()+1)}/${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+                    document.getElementById('facilityMgmtUpdatedAt').textContent = formatted;
+                })();
+                </script>
+                </div>
 
                 <!-- 職員 -->
                 <div id="facility-staff" class="building-detail-panel"></div>
