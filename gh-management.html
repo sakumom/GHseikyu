@@ -1125,7 +1125,53 @@
                 </div>
 
                 <!-- 履歴情報 -->
-                <div id="facility-history" class="building-detail-panel"></div>
+                <div id="facility-history" class="building-detail-panel">
+                <h2 class="section-header">履歴情報</h2>
+                <div id="facilityHistoryContent"></div>
+                <script>
+                (function() {
+                    const START_YEAR = 2023, START_MONTH = 3;
+                    const now = new Date();
+                    const endYear = now.getFullYear();
+                    const endMonth = now.getMonth() + 1;
+
+                    let html = '';
+                    for (let year = endYear; year >= START_YEAR; year--) {
+                        const monthFrom = (year === START_YEAR) ? START_MONTH : 1;
+                        const monthTo   = (year === endYear)   ? endMonth     : 12;
+
+                        const months = [];
+                        for (let m = 12; m >= 1; m--) {
+                            if (m >= monthFrom && m <= monthTo) months.push(m);
+                        }
+                        if (months.length === 0) continue;
+
+                        const links = (row) => months.map(m =>
+                            `<span class="history-link" style="cursor:default;">${m}月</span>`
+                        ).join('');
+
+                        html += `
+                        <div style="margin-bottom:16px; border:1px solid #e0e0e0; border-radius:8px; overflow:hidden;">
+                            <div style="background:#f5f5f5; padding:8px 14px; font-weight:bold; border-bottom:1px solid #e0e0e0; color:#444;">
+                                ${year}年
+                            </div>
+                            <div style="padding:12px 14px;">
+                                <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
+                                    <span style="width:72px; font-size:0.85em; color:#555; flex-shrink:0;">基本情報</span>
+                                    ${links('basic')}
+                                </div>
+                                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                    <span style="width:72px; font-size:0.85em; color:#555; flex-shrink:0;">算定情報</span>
+                                    ${links('calc')}
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+
+                    document.getElementById('facilityHistoryContent').innerHTML = html;
+                })();
+                </script>
+                </div>
 
                 <!-- 管理表 -->
                 <div id="facility-management" class="building-detail-panel"></div>
