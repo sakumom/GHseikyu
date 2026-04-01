@@ -1210,7 +1210,101 @@
                 </div>
 
                 <!-- 職員 -->
-                <div id="facility-staff" class="building-detail-panel"></div>
+                <div id="facility-staff" class="building-detail-panel">
+
+                <!-- 職員一覧 -->
+                <div id="staffListView">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                        <h2 class="section-header" style="margin:0;">職員</h2>
+                        <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;" onclick="showStaffForm()">職員登録</button>
+                    </div>
+                    <div id="staffEntriesInfo" style="font-size:0.9em; color:#555; margin-bottom:8px;"></div>
+                    <table style="width:100%; border-collapse:collapse; font-size:0.9em;">
+                        <thead>
+                            <tr style="border-bottom:2px solid #ddd; background:#f8f9fa;">
+                                <th style="text-align:left; padding:10px 12px; color:#555;">職員名</th>
+                                <th style="text-align:left; padding:10px 12px; color:#555;">常勤</th>
+                                <th style="text-align:left; padding:10px 12px; color:#555;">職種</th>
+                                <th style="text-align:left; padding:10px 12px; color:#555;">兼務</th>
+                                <th style="width:90px; padding:10px 12px; color:#555;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffTableBody"></tbody>
+                    </table>
+                    <div id="staffPagination" style="display:flex; gap:4px; margin-top:16px; align-items:center;"></div>
+                </div>
+
+                <!-- 職員登録・編集画面 -->
+                <div id="staffFormView" style="display:none;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                        <h2 class="section-header" style="margin:0;" id="staffFormTitle">職員登録</h2>
+                    </div>
+                    <div style="display:flex; gap:24px; flex-wrap:wrap;">
+                        <!-- 左側フォーム -->
+                        <div style="flex:1; min-width:260px; max-width:320px;">
+                            <div class="form-group">
+                                <label>職員名</label>
+                                <input type="text" id="staffName" placeholder="例: 山田 花子" style="width:100%; padding:6px 10px; border:1px solid #ddd; border-radius:6px;">
+                            </div>
+                            <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+                                <label style="margin:0;">常勤</label>
+                                <input type="checkbox" id="staffFullTime" style="width:16px; height:16px;">
+                            </div>
+                            <div class="form-group">
+                                <label>職種</label>
+                                <select id="staffRole" style="width:100%; padding:6px 10px; border:1px solid #ddd; border-radius:6px;">
+                                    <option value="">選択してください</option>
+                                    <option value="管理者">管理者</option>
+                                    <option value="サービス管理責任者">サービス管理責任者</option>
+                                    <option value="世話人">世話人</option>
+                                    <option value="生活支援員">生活支援員</option>
+                                    <option value="看護師">看護師</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+                                <label style="margin:0;">兼務</label>
+                                <input type="checkbox" id="staffConcurrent" style="width:16px; height:16px;">
+                            </div>
+                            <div class="form-group">
+                                <label>有効期間開始月</label>
+                                <input type="month" id="staffValidFrom" style="width:100%; padding:6px 10px; border:1px solid #ddd; border-radius:6px;">
+                            </div>
+                            <div class="form-group">
+                                <label>有効期間終了月</label>
+                                <input type="month" id="staffValidTo" style="width:100%; padding:6px 10px; border:1px solid #ddd; border-radius:6px;">
+                            </div>
+                        </div>
+                        <!-- 右側シフト -->
+                        <div style="flex:2; min-width:400px;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <label style="font-weight:600;">曜日ごとのシフト</label>
+                                <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c; padding:4px 14px; font-size:0.88em;" onclick="addStaffShiftRow()">行追加</button>
+                            </div>
+                            <p style="font-size:0.82em; color:#e67e22; margin-bottom:8px;">9時を1日の始まりとしています。9時以降を開始時刻としてください。</p>
+                            <table style="width:100%; border-collapse:collapse; font-size:0.88em;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid #ddd; background:#f8f9fa;">
+                                        <th style="padding:8px; color:#555; min-width:80px;">曜日</th>
+                                        <th style="padding:8px; color:#555; min-width:110px;">職種</th>
+                                        <th style="padding:8px; color:#555; min-width:80px;">開始時刻</th>
+                                        <th style="padding:4px; color:#555;">〜</th>
+                                        <th style="padding:8px; color:#555; min-width:80px;">終了時刻</th>
+                                        <th style="padding:8px; color:#555; min-width:70px;">休憩(分)</th>
+                                        <th style="padding:8px; width:50px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="staffShiftTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:24px;">
+                        <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;" onclick="saveStaff()">保存する</button>
+                        <button type="button" class="btn" style="background:#fff; border:1px solid #ccc; color:#444;" onclick="showStaffList()">戻る</button>
+                    </div>
+                    <input type="hidden" id="staffEditId">
+                </div>
+
+                </div>
 
                 <!-- 日報カスタマイズ -->
                 <div id="facility-daily" class="building-detail-panel"></div>
@@ -2266,6 +2360,142 @@
         document.getElementById('limitedModal').addEventListener('click', function(e) {
             if (e.target === this) closeLimitedModal();
         });
+
+        // ========== 職員管理 ==========
+        const STAFF_PAGE_SIZE = 15;
+        let staffList = JSON.parse(localStorage.getItem('gh_staff_list') || '[]');
+        let staffCurrentPage = 1;
+
+        function renderStaffList() {
+            const tbody = document.getElementById('staffTableBody');
+            const infoEl = document.getElementById('staffEntriesInfo');
+            const pagEl = document.getElementById('staffPagination');
+            if (!tbody) return;
+            const total = staffList.length;
+            const totalPages = Math.max(1, Math.ceil(total / STAFF_PAGE_SIZE));
+            if (staffCurrentPage > totalPages) staffCurrentPage = totalPages;
+            const start = (staffCurrentPage - 1) * STAFF_PAGE_SIZE;
+            const end = Math.min(start + STAFF_PAGE_SIZE, total);
+            const pageItems = staffList.slice(start, end);
+
+            infoEl.textContent = total === 0
+                ? '0件中 0件のentriesを表示'
+                : `${total}件中 ${start + 1}-${end}件のentriesを表示`;
+
+            if (total === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding:20px; text-align:center; color:#aaa;">データなし</td></tr>';
+            } else {
+                tbody.innerHTML = pageItems.map(s => `
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:10px 12px;">${s.name || ''}</td>
+                        <td style="padding:10px 12px;">${s.fullTime ? '✓' : ''}</td>
+                        <td style="padding:10px 12px;">${s.role || ''}</td>
+                        <td style="padding:10px 12px;">${s.concurrent ? '✓' : ''}</td>
+                        <td style="padding:8px 12px;">
+                            <button type="button" class="btn btn-secondary" style="padding:4px 10px; font-size:0.82em; background:#e91e8c; border-color:#e91e8c; color:white;" onclick="showStaffForm('${s.id}')">詳細</button>
+                        </td>
+                    </tr>`).join('');
+            }
+
+            // ページネーション
+            let pagHtml = '';
+            for (let p = 1; p <= totalPages; p++) {
+                const active = p === staffCurrentPage ? 'background:#e91e8c; color:white; border-color:#e91e8c;' : 'background:#fff; color:#333; border-color:#ddd;';
+                pagHtml += `<button type="button" onclick="staffGoPage(${p})" style="padding:5px 11px; border:1px solid #ddd; border-radius:4px; cursor:pointer; font-size:0.88em; ${active}">${p}</button>`;
+            }
+            if (staffCurrentPage < totalPages) {
+                pagHtml += `<button type="button" onclick="staffGoPage(${staffCurrentPage + 1})" style="padding:5px 11px; border:1px solid #ddd; border-radius:4px; cursor:pointer; background:#fff; font-size:0.88em;">次›</button>`;
+                pagHtml += `<button type="button" onclick="staffGoPage(${totalPages})" style="padding:5px 11px; border:1px solid #ddd; border-radius:4px; cursor:pointer; background:#fff; font-size:0.88em;">最後»</button>`;
+            }
+            pagEl.innerHTML = pagHtml;
+        }
+
+        function staffGoPage(p) {
+            staffCurrentPage = p;
+            renderStaffList();
+        }
+
+        function showStaffList() {
+            document.getElementById('staffListView').style.display = '';
+            document.getElementById('staffFormView').style.display = 'none';
+            renderStaffList();
+        }
+
+        function showStaffForm(id) {
+            document.getElementById('staffListView').style.display = 'none';
+            document.getElementById('staffFormView').style.display = '';
+            document.getElementById('staffFormTitle').textContent = id ? '職員編集' : '職員登録';
+            document.getElementById('staffEditId').value = id || '';
+            document.getElementById('staffName').value = '';
+            document.getElementById('staffFullTime').checked = false;
+            document.getElementById('staffRole').value = '';
+            document.getElementById('staffConcurrent').checked = false;
+            document.getElementById('staffValidFrom').value = '';
+            document.getElementById('staffValidTo').value = '';
+            document.getElementById('staffShiftTableBody').innerHTML = '';
+            if (id) {
+                const s = staffList.find(e => e.id === id);
+                if (s) {
+                    document.getElementById('staffName').value = s.name || '';
+                    document.getElementById('staffFullTime').checked = !!s.fullTime;
+                    document.getElementById('staffRole').value = s.role || '';
+                    document.getElementById('staffConcurrent').checked = !!s.concurrent;
+                    document.getElementById('staffValidFrom').value = s.validFrom || '';
+                    document.getElementById('staffValidTo').value = s.validTo || '';
+                    (s.shifts || []).forEach(sh => addStaffShiftRow(sh));
+                }
+            }
+        }
+
+        function addStaffShiftRow(data) {
+            const tbody = document.getElementById('staffShiftTableBody');
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #eee';
+            const dayOpts = ['日','月','火','水','木','金','土'].map(d => `<option value="${d}" ${data && data.day === d ? 'selected' : ''}>${d}</option>`).join('');
+            const roleOpts = ['管理者','サービス管理責任者','世話人','生活支援員','看護師'].map(r => `<option value="${r}" ${data && data.role === r ? 'selected' : ''}>${r}</option>`).join('');
+            tr.innerHTML = `
+                <td style="padding:6px 4px;"><select class="shift-day" style="padding:4px 6px; border:1px solid #ddd; border-radius:4px; width:100%;">${dayOpts}</select></td>
+                <td style="padding:6px 4px;"><select class="shift-role" style="padding:4px 6px; border:1px solid #ddd; border-radius:4px; width:100%;"><option value="">選択</option>${roleOpts}</select></td>
+                <td style="padding:6px 4px;"><input type="time" class="shift-start" value="${data ? data.start || '' : ''}" style="padding:4px 6px; border:1px solid #ddd; border-radius:4px; width:100%;"></td>
+                <td style="padding:6px 4px; text-align:center;">〜</td>
+                <td style="padding:6px 4px;"><input type="time" class="shift-end" value="${data ? data.end || '' : ''}" style="padding:4px 6px; border:1px solid #ddd; border-radius:4px; width:100%;"></td>
+                <td style="padding:6px 4px;"><input type="number" class="shift-break" value="${data ? data.breakMin || '' : ''}" min="0" step="5" placeholder="0" style="padding:4px 6px; border:1px solid #ddd; border-radius:4px; width:100%;"></td>
+                <td style="padding:6px 4px; text-align:center;"><button type="button" onclick="this.closest('tr').remove()" style="background:#f44336; color:white; border:none; border-radius:4px; padding:3px 8px; cursor:pointer; font-size:0.82em;">削除</button></td>`;
+            tbody.appendChild(tr);
+        }
+
+        function saveStaff() {
+            const name = document.getElementById('staffName').value.trim();
+            if (!name) { alert('職員名を入力してください。'); return; }
+            const id = document.getElementById('staffEditId').value;
+            const shifts = Array.from(document.querySelectorAll('#staffShiftTableBody tr')).map(tr => ({
+                day: tr.querySelector('.shift-day').value,
+                role: tr.querySelector('.shift-role').value,
+                start: tr.querySelector('.shift-start').value,
+                end: tr.querySelector('.shift-end').value,
+                breakMin: tr.querySelector('.shift-break').value
+            }));
+            const entry = {
+                id: id || Date.now().toString(),
+                name,
+                fullTime: document.getElementById('staffFullTime').checked,
+                role: document.getElementById('staffRole').value,
+                concurrent: document.getElementById('staffConcurrent').checked,
+                validFrom: document.getElementById('staffValidFrom').value,
+                validTo: document.getElementById('staffValidTo').value,
+                shifts
+            };
+            if (id) {
+                const idx = staffList.findIndex(e => e.id === id);
+                if (idx !== -1) staffList[idx] = entry; else staffList.push(entry);
+            } else {
+                staffList.push(entry);
+            }
+            localStorage.setItem('gh_staff_list', JSON.stringify(staffList));
+            showStaffList();
+        }
+
+        renderStaffList();
 
         function saveFacilityData() {
             facility = {
