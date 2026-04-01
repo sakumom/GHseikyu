@@ -1907,11 +1907,8 @@
                     <div style="display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:8px;">
                         <div style="display:flex; border-bottom:2px solid #dee2e6; gap:4px; flex-wrap:wrap;">
                             <div class="building-inner-tab active" style="border-bottom:none;" onclick="showDailyDetailSubTab('ddWorkPane', this)">勤務実績</div>
-                            <div class="building-inner-tab" style="border-bottom:none;" onclick="showDailyDetailSubTab('ddMedPane', this)">服薬管理</div>
-                            <div class="building-inner-tab" style="border-bottom:none;" onclick="showDailyDetailSubTab('ddCleanPane', this)">清掃支援</div>
-                            <div class="building-inner-tab" style="border-bottom:none;" onclick="showDailyDetailSubTab('ddMoneyPane', this)">金銭管理</div>
-                            <div class="building-inner-tab" style="border-bottom:none;" onclick="showDailyDetailSubTab('ddConsultPane', this)">相談支援</div>
-                            <div class="building-inner-tab" style="border-bottom:none;" onclick="showDailyDetailSubTab('ddOtherPane', this)">その他記録</div>
+                            <div class="building-inner-tab" style="border-bottom:none;" onclick="showDailyDetailSubTab('ddSupportPane', this)">支援内容</div>
+                            <div class="building-inner-tab" style="border-bottom:none;" onclick="showDailyDetailSubTab('ddOtherPane', this)">その他の記録</div>
                         </div>
                         <div style="display:flex; gap:8px; margin-bottom:6px;">
                             <button id="ddEditBtn" type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;" onclick="enterDailyWorkEditMode()">編集</button>
@@ -1978,11 +1975,8 @@
                     </div>
 
                     <!-- 他パネル (準備中) -->
-                    <div id="ddMedPane"     style="display:none;"><p style="color:#aaa; padding:20px 0;">服薬管理（準備中）</p></div>
-                    <div id="ddCleanPane"   style="display:none;"><p style="color:#aaa; padding:20px 0;">清掃支援（準備中）</p></div>
-                    <div id="ddMoneyPane"   style="display:none;"><p style="color:#aaa; padding:20px 0;">金銭管理（準備中）</p></div>
-                    <div id="ddConsultPane" style="display:none;"><p style="color:#aaa; padding:20px 0;">相談支援（準備中）</p></div>
-                    <div id="ddOtherPane"   style="display:none;"><p style="color:#aaa; padding:20px 0;">その他記録（準備中）</p></div>
+                    <div id="ddSupportPane" style="display:none;"><p style="color:#aaa; padding:20px 0;">支援内容（準備中）</p></div>
+                    <div id="ddOtherPane"   style="display:none;"><p style="color:#aaa; padding:20px 0;">その他の記録（準備中）</p></div>
 
                 </div><!-- /#dailyDetailView -->
 
@@ -2785,7 +2779,7 @@
         }
 
         // ========== 日報詳細 ==========
-        const DD_PANES = ['ddWorkPane','ddMedPane','ddCleanPane','ddMoneyPane','ddConsultPane','ddOtherPane'];
+        const DD_PANES = ['ddWorkPane','ddSupportPane','ddOtherPane'];
         const STAFF_ROLES = ['管理者','サービス管理責任者','世話人','生活支援員','看護師'];
         let dailyDetailDateKey = null;
 
