@@ -1866,7 +1866,10 @@
                                 <tr style="border-bottom:2px solid #ddd; background:#f8f9fa;">
                                     <th style="padding:8px 10px; text-align:left; color:#555; white-space:nowrap;">日付</th>
                                     <th style="padding:8px 10px; color:#555; white-space:nowrap;">勤務実績</th>
-                                    <th style="padding:8px 10px; color:#555; white-space:nowrap;">支援内容</th>
+                                    <th style="padding:8px 10px; color:#555; white-space:nowrap;">服薬管理</th>
+                                    <th style="padding:8px 10px; color:#555; white-space:nowrap;">清掃支援</th>
+                                    <th style="padding:8px 10px; color:#555; white-space:nowrap;">金銭管理</th>
+                                    <th style="padding:8px 10px; color:#555; white-space:nowrap;">相談支援</th>
                                     <th style="padding:8px 10px; color:#555; white-space:nowrap;">その他記録</th>
                                     <th style="padding:8px 10px; width:70px;"></th>
                                     <th style="padding:8px 10px; width:70px;"></th>
@@ -2692,7 +2695,7 @@
         renderStaffList();
 
         // ========== 日報・記録 ==========
-        const DAILY_COLS = ['勤務実績','支援内容','その他記録'];
+        const DAILY_COLS = ['勤務実績','服薬管理','清掃支援','金銭管理','相談支援','その他記録'];
         const WEEKDAYS_JP = ['日','月','火','水','木','金','土'];
         let dailyYear = new Date().getFullYear();
         let dailyMonth = new Date().getMonth() + 1; // 1-12
@@ -2792,15 +2795,20 @@
                 const isWeekend = weekday === '日' || weekday === '土';
                 const rowBg = isWeekend ? 'background:#fafafa;' : '';
 
+                const SUPPORT_KEY_MAP = { '服薬管理':'med','清掃支援':'clean','金銭管理':'money','相談支援':'consult' };
                 const cellsHtml = DAILY_COLS.map(col => {
-                    const filled = col === '支援内容'
-                        ? Object.values(dayData['支援内容'] || {}).some(v => v)
-                        : col === 'その他記録'
-                        ? !!(dayData['その他記録']?.text?.trim())
-                        : !!(dayData[col]?.rows?.length > 0);
-                    const style = filled
-                        ? 'color:#222; font-size:0.82em;'
-                        : 'color:#e91e8c; font-size:0.82em;';
+                    if (col in SUPPORT_KEY_MAP) {
+                        const checked = !!(dayData['支援内容']?.[SUPPORT_KEY_MAP[col]]);
+                        return `<td style="padding:7px 10px; text-align:center; font-size:0.9em;">${checked ? '✓' : ''}</td>`;
+                    }
+                    if (col === 'その他記録') {
+                        const hasText = !!(dayData['その他記録']?.text?.trim());
+                        const style = hasText ? 'color:#222; font-size:0.82em;' : 'color:#e91e8c; font-size:0.82em;';
+                        return `<td style="padding:7px 10px; text-align:center; ${style}">${hasText ? '記載あり' : '未入力'}</td>`;
+                    }
+                    // 勤務実績
+                    const filled = !!(dayData[col]?.rows?.length > 0);
+                    const style = filled ? 'color:#222; font-size:0.82em;' : 'color:#e91e8c; font-size:0.82em;';
                     return `<td style="padding:7px 10px; text-align:center; ${style}">${filled ? '入力済' : '未入力'}</td>`;
                 }).join('');
 
