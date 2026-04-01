@@ -1995,7 +1995,20 @@
                             <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;" onclick="saveDailySupport()">保存する</button>
                         </div>
                     </div>
-                    <div id="ddOtherPane"   style="display:none;"><p style="color:#aaa; padding:20px 0;">その他の記録（準備中）</p></div>
+                    <!-- その他の記録パネル -->
+                    <div id="ddOtherPane" style="display:none;">
+                        <div style="display:flex; gap:10px; margin-bottom:12px; align-items:center; flex-wrap:wrap;">
+                            <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c; padding:5px 14px; font-size:0.88em;" onclick="copyPrevDayOther()">前日をコピー</button>
+                            <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c; padding:5px 14px; font-size:0.88em;" onclick="saveOtherRecord()">保存する</button>
+                            <span id="otherSaveToast" style="display:none; color:#2e7d32; font-size:0.9em; font-weight:600;"></span>
+                        </div>
+                        <textarea id="otherRecordText" maxlength="200" rows="6"
+                            oninput="document.getElementById('otherCharCount').textContent = this.value.length + '/200'"
+                            style="width:100%; padding:10px; border:1px solid #ddd; border-radius:6px; font-size:0.93em; resize:vertical; box-sizing:border-box;"></textarea>
+                        <div style="text-align:right; font-size:0.82em; color:#888; margin-top:4px;">
+                            <span id="otherCharCount">0/200</span>
+                        </div>
+                    </div>
 
                 </div><!-- /#dailyDetailView -->
 
@@ -2782,6 +2795,8 @@
                 const cellsHtml = DAILY_COLS.map(col => {
                     const filled = col === '支援内容'
                         ? Object.values(dayData['支援内容'] || {}).some(v => v)
+                        : col === 'その他記録'
+                        ? !!(dayData['その他記録']?.text?.trim())
                         : !!(dayData[col]?.rows?.length > 0);
                     const style = filled
                         ? 'color:#222; font-size:0.82em;'
@@ -2846,6 +2861,9 @@
             } else if (paneId === 'ddSupportPane') {
                 editBtn.style.display = 'none';
                 renderDailySupportView();
+            } else if (paneId === 'ddOtherPane') {
+                editBtn.style.display = 'none';
+                renderOtherRecord();
             } else {
                 editBtn.style.display = 'none';
             }
@@ -3035,6 +3053,48 @@
                 const el = document.getElementById(`se-${f.id}`);
                 if (el) el.checked = !!prevData[f.id];
             });
+        }
+
+        // ========== その他の記録タブ ==========
+        function renderOtherRecord() {
+            const text = dailyRecords[dailySelectedBuildingId]?.[dailyDetailDateKey]?.['その他記録']?.text || '';
+            const ta = document.getElementById('otherRecordText');
+            const cnt = document.getElementById('otherCharCount');
+            if (ta)  ta.value = text;
+            if (cnt) cnt.textContent = text.length + '/200';
+        }
+
+        function saveOtherRecord() {
+            const bldId = dailySelectedBuildingId;
+            const dk = dailyDetailDateKey;
+            const text = (document.getElementById('otherRecordText')?.value || '').slice(0, 200);
+            if (!dailyRecords[bldId]) dailyRecords[bldId] = {};
+            if (!dailyRecords[bldId][dk]) dailyRecords[bldId][dk] = {};
+            dailyRecords[bldId][dk]['その他記録'] = { text };
+            localStorage.setItem('gh_daily_records', JSON.stringify(dailyRecords));
+            // トースト
+            const toast = document.getElementById('otherSaveToast');
+            if (toast) {
+                toast.textContent = '保存しました';
+                toast.style.display = 'inline';
+                toast.style.opacity = '1';
+                clearTimeout(toast._timer);
+                toast._timer = setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => { toast.style.display = 'none'; }, 300);
+                }, 2500);
+            }
+        }
+
+        function copyPrevDayOther() {
+            const [y, m, d] = dailyDetailDateKey.split('-').map(Number);
+            const prev = new Date(y, m - 1, d - 1);
+            const prevKey = `${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}-${String(prev.getDate()).padStart(2,'0')}`;
+            const prevText = dailyRecords[dailySelectedBuildingId]?.[prevKey]?.['その他記録']?.text || '';
+            const ta = document.getElementById('otherRecordText');
+            const cnt = document.getElementById('otherCharCount');
+            if (ta)  ta.value = prevText;
+            if (cnt) cnt.textContent = prevText.length + '/200';
         }
 
         // 日報タブ初期化（タブ切り替え時）
