@@ -661,6 +661,7 @@
             <button class="tab" onclick="showTab('buildings')">🏘️ 建物管理</button>
             <button class="tab" onclick="showTab('users')">👤 利用者管理</button>
             <button class="tab" onclick="showTab('records')">📅 実績記録</button>
+            <button class="tab" onclick="showTab('daily-record')">📓 日報・記録</button>
             <button class="tab" onclick="showTab('export')">📤 請求データ出力</button>
         </div>
 
@@ -1819,6 +1820,9 @@
                     <button class="btn btn-primary" onclick="confirmSaveAllRecords()" style="background:#e91e8c; border-color:#e91e8c; padding:12px 40px; font-size:1em;">💾 保存する</button>
                 </div>
             </div>
+
+            <!-- 日報・記録タブ -->
+            <div id="daily-record" class="tab-content"></div>
 
             <!-- 請求データ出力タブ -->
             <div id="export" class="tab-content">
