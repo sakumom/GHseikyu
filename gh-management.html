@@ -1977,46 +1977,25 @@
                     <!-- 他パネル (準備中) -->
                     <!-- 支援内容パネル -->
                     <div id="ddSupportPane" style="display:none;">
-                        <!-- 表示モード -->
-                        <div id="ddSupportViewMode">
-                            <div style="display:flex; flex-direction:column; gap:14px; margin-top:8px;">
-                                <label style="display:flex; align-items:center; gap:10px; font-size:0.95em;">
-                                    <input type="checkbox" id="sv-med" disabled style="width:16px; height:16px;"> 服薬管理
-                                </label>
-                                <label style="display:flex; align-items:center; gap:10px; font-size:0.95em;">
-                                    <input type="checkbox" id="sv-clean" disabled style="width:16px; height:16px;"> 清掃支援
-                                </label>
-                                <label style="display:flex; align-items:center; gap:10px; font-size:0.95em;">
-                                    <input type="checkbox" id="sv-money" disabled style="width:16px; height:16px;"> 金銭管理
-                                </label>
-                                <label style="display:flex; align-items:center; gap:10px; font-size:0.95em;">
-                                    <input type="checkbox" id="sv-consult" disabled style="width:16px; height:16px;"> 相談支援
-                                </label>
-                            </div>
+                        <div style="margin-bottom:14px;">
+                            <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c; padding:5px 14px; font-size:0.88em;" onclick="copyPrevDaySupport()">前日をコピー</button>
                         </div>
-                        <!-- 編集モード -->
-                        <div id="ddSupportEditMode" style="display:none;">
-                            <div style="margin-bottom:14px;">
-                                <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c; padding:5px 14px; font-size:0.88em;" onclick="copyPrevDaySupport()">前日をコピー</button>
-                            </div>
-                            <div style="display:flex; flex-direction:column; gap:14px;">
-                                <label style="display:flex; align-items:center; gap:10px; font-size:0.95em; cursor:pointer;">
-                                    <input type="checkbox" id="se-med" style="width:16px; height:16px;"> 服薬管理
-                                </label>
-                                <label style="display:flex; align-items:center; gap:10px; font-size:0.95em; cursor:pointer;">
-                                    <input type="checkbox" id="se-clean" style="width:16px; height:16px;"> 清掃支援
-                                </label>
-                                <label style="display:flex; align-items:center; gap:10px; font-size:0.95em; cursor:pointer;">
-                                    <input type="checkbox" id="se-money" style="width:16px; height:16px;"> 金銭管理
-                                </label>
-                                <label style="display:flex; align-items:center; gap:10px; font-size:0.95em; cursor:pointer;">
-                                    <input type="checkbox" id="se-consult" style="width:16px; height:16px;"> 相談支援
-                                </label>
-                            </div>
-                            <div style="display:flex; gap:10px; margin-top:20px;">
-                                <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;" onclick="saveDailySupport()">保存する</button>
-                                <button type="button" class="btn" style="background:#fff; border:1px solid #ccc; color:#444;" onclick="exitDailySupportEditMode()">戻る</button>
-                            </div>
+                        <div style="display:flex; flex-direction:column; gap:14px;">
+                            <label style="display:flex; align-items:center; gap:10px; font-size:0.95em; cursor:pointer;">
+                                <input type="checkbox" id="se-med" style="width:16px; height:16px;"> 服薬管理
+                            </label>
+                            <label style="display:flex; align-items:center; gap:10px; font-size:0.95em; cursor:pointer;">
+                                <input type="checkbox" id="se-clean" style="width:16px; height:16px;"> 清掃支援
+                            </label>
+                            <label style="display:flex; align-items:center; gap:10px; font-size:0.95em; cursor:pointer;">
+                                <input type="checkbox" id="se-money" style="width:16px; height:16px;"> 金銭管理
+                            </label>
+                            <label style="display:flex; align-items:center; gap:10px; font-size:0.95em; cursor:pointer;">
+                                <input type="checkbox" id="se-consult" style="width:16px; height:16px;"> 相談支援
+                            </label>
+                        </div>
+                        <div style="margin-top:20px;">
+                            <button type="button" class="btn btn-primary" style="background:#e91e8c; border-color:#e91e8c;" onclick="saveDailySupport()">保存する</button>
                         </div>
                     </div>
                     <div id="ddOtherPane"   style="display:none;"><p style="color:#aaa; padding:20px 0;">その他の記録（準備中）</p></div>
@@ -2858,9 +2837,7 @@
             DD_PANES.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
             btn.classList.add('active');
             document.getElementById(paneId).style.display = '';
-            // 各パネルの編集モードをリセット
             exitDailyWorkEditMode();
-            exitDailySupportEditMode();
             const editBtn = document.getElementById('ddEditBtn');
             if (!editBtn) return;
             if (paneId === 'ddWorkPane') {
@@ -2868,8 +2845,7 @@
                 editBtn.onclick = enterDailyWorkEditMode;
                 renderDailyWorkView();
             } else if (paneId === 'ddSupportPane') {
-                editBtn.style.display = '';
-                editBtn.onclick = enterDailySupportEditMode;
+                editBtn.style.display = 'none';
                 renderDailySupportView();
             } else {
                 editBtn.style.display = 'none';
@@ -3003,39 +2979,18 @@
 
         // ========== 支援内容タブ ==========
         const SUPPORT_FIELDS = [
-            { id: 'med',    label: '服薬管理' },
-            { id: 'clean',  label: '清掃支援' },
-            { id: 'money',  label: '金銭管理' },
-            { id: 'consult',label: '相談支援' }
+            { id: 'med',     label: '服薬管理' },
+            { id: 'clean',   label: '清掃支援' },
+            { id: 'money',   label: '金銭管理' },
+            { id: 'consult', label: '相談支援' }
         ];
 
         function renderDailySupportView() {
             const data = dailyRecords[dailySelectedBuildingId]?.[dailyDetailDateKey]?.支援内容 || {};
             SUPPORT_FIELDS.forEach(f => {
-                const el = document.getElementById(`sv-${f.id}`);
-                if (el) el.checked = !!data[f.id];
-            });
-        }
-
-        function enterDailySupportEditMode() {
-            document.getElementById('ddSupportViewMode').style.display = 'none';
-            document.getElementById('ddSupportEditMode').style.display = '';
-            document.getElementById('ddEditBtn').style.display = 'none';
-            const data = dailyRecords[dailySelectedBuildingId]?.[dailyDetailDateKey]?.支援内容 || {};
-            SUPPORT_FIELDS.forEach(f => {
                 const el = document.getElementById(`se-${f.id}`);
                 if (el) el.checked = !!data[f.id];
             });
-        }
-
-        function exitDailySupportEditMode() {
-            const vm = document.getElementById('ddSupportViewMode');
-            const em = document.getElementById('ddSupportEditMode');
-            const eb = document.getElementById('ddEditBtn');
-            if (vm) vm.style.display = '';
-            if (em) em.style.display = 'none';
-            if (eb) eb.style.display = '';
-            renderDailySupportView();
         }
 
         function saveDailySupport() {
@@ -3050,7 +3005,6 @@
             });
             dailyRecords[bldId][dk].支援内容 = data;
             localStorage.setItem('gh_daily_records', JSON.stringify(dailyRecords));
-            exitDailySupportEditMode();
         }
 
         function copyPrevDaySupport() {
