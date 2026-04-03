@@ -2416,15 +2416,41 @@
             document.getElementById('exportMonth').value =
                 `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
             initUploadArea();
+
+            // タブ状態の復元
+            const savedMainTab = localStorage.getItem('gh_active_main_tab');
+            const validMainTabs = ['facility','buildings','users','records','daily-record','export'];
+            if (savedMainTab && validMainTabs.includes(savedMainTab)) {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                const btn = document.querySelector(`.tab[onclick*="'${savedMainTab}'"]`);
+                if (btn) btn.classList.add('active');
+                const content = document.getElementById(savedMainTab);
+                if (content) content.classList.add('active');
+                if (savedMainTab === 'export') initExportTab();
+            }
+
+            const savedFacilityTab = localStorage.getItem('gh_active_facility_tab');
+            const validFacilityTabs = ['facility-basic','facility-calculation','facility-limited','facility-history','facility-management','facility-staff','facility-daily'];
+            if (savedFacilityTab && validFacilityTabs.includes(savedFacilityTab)) {
+                document.querySelectorAll('#facility .building-inner-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('#facility .building-detail-panel').forEach(c => c.classList.remove('active'));
+                const fBtn = document.querySelector(`#facility .building-inner-tab[onclick*="'${savedFacilityTab}'"]`);
+                if (fBtn) fBtn.classList.add('active');
+                const fContent = document.getElementById(savedFacilityTab);
+                if (fContent) fContent.classList.add('active');
+            }
         });
 
         // タブ切り替え
         function showTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
+
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
+
+            localStorage.setItem('gh_active_main_tab', tabName);
 
             if (tabName === 'export') {
                 initExportTab();
@@ -2437,6 +2463,7 @@
             document.querySelectorAll('#facility .building-detail-panel').forEach(c => c.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById(tabName).classList.add('active');
+            localStorage.setItem('gh_active_facility_tab', tabName);
         }
 
         // ========== 事業所情報管理 ==========
