@@ -3717,20 +3717,24 @@
                     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                 const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                 const page = await pdf.getPage(1);
-                const viewport = page.getViewport({ scale: 2.5 });
+                const viewport = page.getViewport({ scale: 3.0 });
 
                 const canvas = document.createElement('canvas');
                 canvas.width  = viewport.width;
                 canvas.height = viewport.height;
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
+                // PNG形式・最高品質で画像データ化
+                const imageDataUrl = canvas.toDataURL('image/png', 1.0);
+
                 progress.textContent = '🔍 OCR処理中... 0%';
-                const result = await Tesseract.recognize(canvas, 'jpn+eng', {
+                const result = await Tesseract.recognize(imageDataUrl, 'jpn', {
                     logger: m => {
                         if (m.status === 'recognizing text') {
                             progress.textContent = `🔍 OCR処理中... ${Math.round(m.progress * 100)}%`;
                         }
-                    }
+                    },
+                    tessedit_pageseg_mode: '6'
                 });
 
                 progress.textContent = '✅ 読み取り完了！';
