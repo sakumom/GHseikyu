@@ -2403,8 +2403,9 @@
             displayFacilityInfo();
             
             const today = new Date();
-            document.getElementById('exportMonth').value = 
+            document.getElementById('exportMonth').value =
                 `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+            initUploadArea();
         });
 
         // タブ切り替え
@@ -3629,31 +3630,48 @@
             const uploadArea = document.getElementById('uploadArea');
             if (!uploadArea || uploadArea._initialized) return;
             uploadArea._initialized = true;
-            uploadArea.addEventListener('click', () => {
+
+            uploadArea.addEventListener('click', (e) => {
+                if (e.target.tagName === 'INPUT') return;
                 document.getElementById('certificateFile').click();
             });
             uploadArea.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 uploadArea.classList.add('dragover');
             });
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.classList.remove('dragover');
+            uploadArea.addEventListener('dragleave', (e) => {
+                if (!uploadArea.contains(e.relatedTarget)) {
+                    uploadArea.classList.remove('dragover');
+                }
             });
             uploadArea.addEventListener('drop', (e) => {
                 e.preventDefault();
                 uploadArea.classList.remove('dragover');
                 const file = e.dataTransfer.files[0];
                 if (file && (file.type.startsWith('image/') || file.type === 'application/pdf')) {
+                    showUploadedFileName(file.name);
                     processFile(file);
                 } else {
-                    alert('❌ PDFまたは画像ファイルを選択してください');
+                    alert('❌ JPG・PNG画像またはPDFファイルを選択してください');
                 }
             });
+        }
+
+        function showUploadedFileName(name) {
+            let el = document.getElementById('uploadedFileName');
+            if (!el) {
+                el = document.createElement('p');
+                el.id = 'uploadedFileName';
+                el.style.cssText = 'margin-top:8px; font-size:0.85em; color:#444; word-break:break-all;';
+                document.getElementById('uploadArea').appendChild(el);
+            }
+            el.textContent = '📎 ' + name;
         }
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
             if (file) {
+                showUploadedFileName(file.name);
                 processFile(file);
             }
         }
