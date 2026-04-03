@@ -3725,7 +3725,7 @@
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
                 progress.textContent = '🔍 OCR処理中... 0%';
-                const result = await Tesseract.recognize(canvas, 'jpn', {
+                const result = await Tesseract.recognize(canvas, 'jpn+eng', {
                     logger: m => {
                         if (m.status === 'recognizing text') {
                             progress.textContent = `🔍 OCR処理中... ${Math.round(m.progress * 100)}%`;
@@ -3735,6 +3735,7 @@
 
                 progress.textContent = '✅ 読み取り完了！';
                 console.log('PDF OCR結果:', result.data.text);
+                alert('【OCR生テキスト（PDF）】\n' + result.data.text.slice(0, 1000));
                 extractCertificateData(result.data.text);
                 setTimeout(() => { progress.style.display = 'none'; }, 3000);
 
@@ -3756,7 +3757,7 @@
                     
                     const result = await Tesseract.recognize(
                         e.target.result,
-                        'jpn',
+                        'jpn+eng',
                         {
                             logger: m => {
                                 if (m.status === 'recognizing text') {
@@ -3769,6 +3770,7 @@
 
                     progress.textContent = '✅ 読み取り完了！';
                     console.log('OCR結果:', result.data.text);
+                    alert('【OCR生テキスト（画像）】\n' + result.data.text.slice(0, 1000));
                     extractCertificateData(result.data.text);
                     
                     setTimeout(() => {
