@@ -6535,8 +6535,8 @@ window.onload = function() {
                 const hosdays = uc.hospitalDays || 0;
                 const n = v => Number(v||0).toLocaleString('ja-JP');
 
-                // 明細行
-                const emptyNeeded = Math.max(3, 9 - details.length);
+                // 明細行（最低10行確保）
+                const emptyNeeded = Math.max(0, 10 - details.length);
                 let detailRowsHTML = '';
                 details.forEach(d => {
                     const codeStr = String(d.code).padStart(6,'0');
@@ -6557,7 +6557,9 @@ window.onload = function() {
   <span class="p-title-small">（様式第三）</span>
   <div class="p-title-main">訓練等給付費等明細書</div>
   <div class="p-subtitle">（共同生活援助）</div>
-  <div class="p-nengetsu">${ymDisp}分</div>
+  <table style="position:absolute;right:35pt;top:90pt;border-collapse:collapse;">
+    <tr>${(ymDisp+'分').split('').map(c=>`<td style="border:0.9pt solid #000;min-width:14pt;height:18pt;text-align:center;font-size:9pt;padding:1pt 2pt;">${c}</td>`).join('')}</tr>
+  </table>
 
   <!-- 市町村番号 -->
   <table class="tbl-city">
@@ -6645,27 +6647,34 @@ window.onload = function() {
   </table>
 
   <!-- サービス種別 -->
-  <table style="position:absolute;left:35.8pt;top:278pt;width:524pt;">
+  <table style="position:absolute;left:35.8pt;top:278pt;width:524pt;border-collapse:collapse;">
+    <colgroup>
+      <col style="width:40pt"><col style="width:12pt"><col style="width:12pt">
+      <col style="width:22pt">
+      <col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt">
+      <col style="width:22pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt"><col style="width:12pt">
+      <col style="width:18pt"><col style="width:16pt">
+      <col style="width:18pt"><col style="width:16pt">
+    </colgroup>
     <tr>
-      <td rowspan="2" style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;text-align:center;width:40pt;padding:2pt;white-space:nowrap;">サービス<br>種別</td>
-      <td style="border:1.8pt solid #000;text-align:center;width:12pt;font-size:10pt;font-weight:bold;">3</td>
-      <td style="border:1.8pt solid #000;text-align:center;width:12pt;font-size:10pt;font-weight:bold;">3</td>
-      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;padding:2pt;white-space:nowrap;">開始年月日</td>
-      <td colspan="4" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">${startW}</td>
-      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">終了年月日</td>
-      <td colspan="3" style="border:0.9pt solid #000;width:45pt;"></td>
-      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">入院日数</td>
-      <td style="border:0.9pt solid #000;width:20pt;text-align:center;">${hosdays||''}</td>
-      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">外泊日数</td>
-      <td style="border:0.9pt solid #000;width:20pt;"></td>
+      <td rowspan="2" style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;text-align:center;padding:2pt;white-space:nowrap;">サービス<br>種別</td>
+      <td style="border:1.8pt solid #000;text-align:center;font-size:10pt;font-weight:bold;">3</td>
+      <td style="border:1.8pt solid #000;text-align:center;font-size:10pt;font-weight:bold;">3</td>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;padding:1pt;white-space:nowrap;">開始年月日</td>
+      ${startW.split('').slice(0,9).map(c=>`<td style="border:0.9pt solid #000;text-align:center;font-size:8pt;">${c}</td>`).join('')}
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;padding:1pt;white-space:nowrap;">終了年月日</td>
+      ${Array(9).fill('<td style="border:0.9pt solid #000;"></td>').join('')}
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;padding:1pt;white-space:nowrap;">入院日数</td>
+      <td style="border:0.9pt solid #000;text-align:center;font-size:9pt;">${hosdays||''}</td>
+      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:8pt;padding:1pt;white-space:nowrap;">外泊日数</td>
+      <td style="border:0.9pt solid #000;"></td>
     </tr>
     <tr>
       <td colspan="2" style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
       <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">開始年月日</td>
-      <td colspan="4" style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
-      <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
+      ${Array(9).fill('<td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>').join('')}
       <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">終了年月日</td>
-      <td colspan="3" style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
+      ${Array(9).fill('<td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>').join('')}
       <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">入院日数</td>
       <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;"></td>
       <td style="border:0.9pt solid #000;border-bottom:1.8pt solid #000;background:#e8e8e8;font-size:8pt;white-space:nowrap;">外泊日数</td>
@@ -6845,14 +6854,12 @@ window.onload = function() {
     </thead>
     <tbody>
       <tr>
-        <td class="vr thick-b" rowspan="7" style="width:20pt;">介護給付費</td>
+        <td class="vr thick-b" rowspan="5" style="width:20pt;">介護給付費</td>
         <td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td>
         <td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td>
         <td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td>
         <td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td>
       </tr>
-      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
-      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
       <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
       <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
       <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
@@ -6873,11 +6880,24 @@ window.onload = function() {
       <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
 
       <tr>
-        <td class="vr" rowspan="2" style="width:20pt;font-size:8pt;">地域支援給付費</td>
-        <td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td>
-        <td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td>
+        <td class="vr" rowspan="2" style="width:20pt;font-size:7pt;">地域相談支援給付費</td>
+        <td colspan="2" style="border:0.9pt solid #000;height:22pt;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
       </tr>
-      <tr><td colspan="2" style="border:0.9pt solid #000;height:22pt;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td><td style="border:0.9pt solid #000;"></td></tr>
+      <tr>
+        <td colspan="2" style="border:0.9pt solid #000;height:22pt;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+        <td style="border:0.9pt solid #000;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),#aaa calc(50% - 0.5px),#aaa calc(50% + 0.5px),transparent calc(50% + 0.5px));"></td>
+      </tr>
 
       <tr>
         <td colspan="3" class="c" style="border:1.8pt solid #000;font-weight:bold;background:#e8e8e8;">小　　　計</td>
