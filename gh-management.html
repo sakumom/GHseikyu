@@ -3805,7 +3805,7 @@
             const setVal = (id, val) => {
                 const el = document.getElementById(id);
                 if (!el || val === null || val === undefined || String(val).trim() === '') return false;
-                const v = (el.type === 'number') ? String(val).replace(/[,，]/g, '') : String(val).trim();
+                const v = (el.type === 'number') ? String(val).replace(/[,，、]/g, '') : String(val).trim();
                 el.value = v;
                 filled[id] = v;
                 console.log(`[OCR入力] ${id} = ${v}`);
@@ -3818,24 +3818,31 @@
                 .replace(/[Ａ-Ｚａ-ｚ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
                 .replace(/　/g, ' ');
 
-            // 和暦→西暦変換（令和/平成/昭和 + R/H/S短縮形 対応）
+            // 和暦→西暦変換（令和/平成/昭和 + R/H短縮形 対応、全角数字も処理済み想定）
             function warekiToDate(s) {
                 if (!s) return '';
+                // 全角数字を半角に
                 s = s.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).trim();
-                // R6.4.1 / H30.4.1 形式
-                let m = s.match(/[Rr令]\s*(\d{1,2})\s*[.年\/]\s*(\d{1,2})\s*[.月\/]\s*(\d{1,2})/);
+                // 令和N年M月D日（スペース・区切り文字混入許容）
+                let m = s.match(/令\s*和\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/);
                 if (m) return `${2018+parseInt(m[1])}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
-                m = s.match(/[Hh平]\s*(\d{1,2})\s*[.年\/]\s*(\d{1,2})\s*[.月\/]\s*(\d{1,2})/);
+                m = s.match(/平\s*成\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/);
                 if (m) return `${1988+parseInt(m[1])}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
-                // 令和X年X月X日 / 2024/4/1
-                m = s.match(/(?:(令和|平成|昭和)\s*(\d{1,2})|(\d{4}))\s*[年.\/]\s*(\d{1,2})\s*[月.\/]\s*(\d{1,2})/);
-                if (!m) return '';
-                const y = m[1] ? (m[1]==='令和'?2018:m[1]==='平成'?1988:1925)+parseInt(m[2]) : parseInt(m[3]);
-                return `${y}-${m[4].padStart(2,'0')}-${m[5].padStart(2,'0')}`;
+                m = s.match(/昭\s*和\s*(\d{1,2})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})/);
+                if (m) return `${1925+parseInt(m[1])}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+                // R7.4.1 / H30.4.1 短縮形
+                m = s.match(/[Rr]\s*(\d{1,2})\s*[.\/]\s*(\d{1,2})\s*[.\/]\s*(\d{1,2})/);
+                if (m) return `${2018+parseInt(m[1])}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+                m = s.match(/[Hh]\s*(\d{1,2})\s*[.\/]\s*(\d{1,2})\s*[.\/]\s*(\d{1,2})/);
+                if (m) return `${1988+parseInt(m[1])}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+                // 西暦 2024/4/1
+                m = s.match(/(\d{4})\s*[年.\/]\s*(\d{1,2})\s*[月.\/]\s*(\d{1,2})/);
+                if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+                return '';
             }
 
             // キーワード群の近傍テキストを返す（複数候補を順に試す）
-            function findNear(keywords, range = 60) {
+            function findNear(keywords, range = 80) {
                 for (const kw of keywords) {
                     for (const src of [norm, text]) {
                         const i = src.indexOf(kw);
@@ -3845,41 +3852,68 @@
                 return '';
             }
 
-            // 日付パターン（和暦・短縮・西暦）
-            const D = /(?:[RrHh令平昭]\s*\d{1,2}|令和\s*\d{1,2}|平成\s*\d{1,2}|昭和\s*\d{1,2}|\d{4})\s*[年.\/]\s*\d{1,2}\s*[月.\/]\s*\d{1,2}/g;
+            // 日付パターン（和暦・西暦どちらも）
+            const D = /(?:令\s*和|平\s*成|昭\s*和|[RrHh])\s*\d{1,2}\s*(?:年|[.\/])\s*\d{1,2}\s*(?:月|[.\/])\s*\d{1,2}(?:\s*日)?|\d{4}\s*[年.\/]\s*\d{1,2}\s*[月.\/]\s*\d{1,2}/g;
 
             // ① 受給者証番号（10桁）
-            const certArea = findNear(['受給者証番号', '受給者番号']);
-            const certNo = certArea.match(/\d{10}/) || norm.match(/\d{10}/);
-            if (certNo) setVal('certNo', certNo[0]);
+            const certArea = findNear(['受給者証番号', '受給者番号'], 50);
+            const certNoM = certArea.match(/\d{10}/) || norm.match(/\d{10}/);
+            if (certNoM) setVal('certNo', certNoM[0]);
 
-            // ② 市町村番号（6桁）
-            const cityArea = findNear(['市町村番号', '市町村コード', '支給市町村']);
-            const cityNo = cityArea.match(/(?<!\d)\d{6}(?!\d)/) || norm.match(/(?<!\d)\d{6}(?!\d)/);
-            if (cityNo && cityNo[0] !== certNo?.[0]) setVal('certCityCode', cityNo[0]);
+            // ② 支給市町村番号（6桁）- 受給者証番号の10桁と混同しないよう注意
+            const cityArea = findNear(['支給市町村番号', '市町村番号', '市町村コード', '支給市町村'], 50);
+            const cityNoM = cityArea.match(/(?<!\d)\d{6}(?!\d)/);
+            if (cityNoM && cityNoM[0] !== certNoM?.[0]) {
+                setVal('certCityCode', cityNoM[0]);
+            } else if (!cityNoM) {
+                // フォールバック：全体から6桁を探す（10桁と重複しないもの）
+                const allSix = [...norm.matchAll(/(?<!\d)(\d{6})(?!\d)/g)];
+                const sixMatch = allSix.find(m => !certNoM || !certNoM[0].includes(m[1]));
+                if (sixMatch) setVal('certCityCode', sixMatch[1]);
+            }
 
-            // ③ 障害支援区分（OCRスペース混入を許容）
-            const suppM = norm.match(/区\s*分\s*([1-6])/);
+            // ③ 障害支援区分（全角・半角・スペース混入対応）
+            const suppM = norm.match(/障\s*害\s*支\s*援\s*区\s*分[^\d]*([1-6])/)
+                       || norm.match(/区\s*分\s*([1-6])/);
             if (suppM) setVal('certSupportLevel', '区分' + suppM[1]);
 
             // ④ 交付年月日
-            const issueArea = findNear(['交付年月日', '交付日']);
+            const issueArea = findNear(['交付年月日', '交付日'], 60);
             const issueDates = [...issueArea.matchAll(D)];
             if (issueDates[0]) setVal('certIssueDate', warekiToDate(issueDates[0][0]));
 
-            // ⑤ 認定有効期間（開始・終了）
-            const validArea = findNear(['認定有効期間', '支給決定期間', '有効期間'], 100);
-            const validDates = [...validArea.matchAll(D)];
-            if (validDates[0]) setVal('certValidFrom', warekiToDate(validDates[0][0]));
-            if (validDates[1]) setVal('certValidTo',   warekiToDate(validDates[1][0]));
+            // ⑤ 認定有効期間（「から」「まで」区切りに対応）
+            const validArea = findNear(['認定有効期間', '支給決定期間', '有効期間'], 150);
+            if (validArea) {
+                // 「令和X年X月X日から令和X年X月X日まで」パターン
+                const fromToM = validArea.match(
+                    /((?:令\s*和|平\s*成|昭\s*和)\s*\d{1,2}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日)\s*から\s*((?:令\s*和|平\s*成|昭\s*和)\s*\d{1,2}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日)\s*まで/
+                );
+                if (fromToM) {
+                    setVal('certValidFrom', warekiToDate(fromToM[1]));
+                    setVal('certValidTo',   warekiToDate(fromToM[2]));
+                } else {
+                    // 日付を2つ取り出す
+                    const vDates = [...validArea.matchAll(D)];
+                    if (vDates[0]) setVal('certValidFrom', warekiToDate(vDates[0][0]));
+                    if (vDates[1]) setVal('certValidTo',   warekiToDate(vDates[1][0]));
+                }
+            }
 
             // ⑥ 負担上限月額（0・9300・37200 等、カンマ区切りも対応）
-            const burdenArea = findNear(['負担上限月額', '負担上限', '上限月額']);
+            const burdenArea = findNear(['負担上限月額', '負担上限', '上限月額'], 40);
             const burdenM = burdenArea.match(/[\d,]+/);
-            if (burdenM) setVal('certBurdenLimit', burdenM[0]);
+            if (burdenM) setVal('certBurdenLimit', burdenM[0].replace(/,/g, ''));
 
             // 結果サマリ
-            const summary = Object.entries(filled).map(([k,v]) => `・${k}: ${v}`).join('\n');
+            const fieldLabels = {
+                certNo: '受給者証番号', certCityCode: '支給市町村番号',
+                certSupportLevel: '障害支援区分', certIssueDate: '交付年月日',
+                certValidFrom: '認定有効期間（開始）', certValidTo: '認定有効期間（終了）',
+                certBurdenLimit: '負担上限月額'
+            };
+            const summary = Object.entries(filled)
+                .map(([k,v]) => `・${fieldLabels[k]||k}: ${v}`).join('\n');
             alert('📝 フィールドへの入力完了\n\n' +
                 (summary || '⚠ 入力できた項目がありませんでした。\nOCRテキストを確認してください。') +
                 '\n\n内容を確認して必要に応じて手動修正してください。');
