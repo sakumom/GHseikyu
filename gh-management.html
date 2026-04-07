@@ -6557,7 +6557,8 @@ window.onload = function() {
   <span class="p-title-small">（様式第三）</span>
   <div class="p-title-main">訓練等給付費等明細書</div>
   <div class="p-subtitle">（共同生活援助）</div>
-  <table style="position:absolute;right:35pt;top:90pt;border-collapse:collapse;">
+  <!-- 対象年月（top:56pt＝タイトルと同じ高さ。指定事業所番号 top:90pt と重ならない） -->
+  <table style="position:absolute;right:35pt;top:56pt;border-collapse:collapse;">
     <tr>${(ymDisp+'分').split('').map(c=>`<td style="border:0.9pt solid #000;min-width:14pt;height:18pt;text-align:center;font-size:9pt;padding:1pt 2pt;">${c}</td>`).join('')}</tr>
   </table>
 
@@ -6574,14 +6575,14 @@ window.onload = function() {
     <tr>${Array(6).fill('<td>&nbsp;</td>').join('')}<td class="lbl" style="font-size:8pt;"></td></tr>
   </table>
 
-  <!-- 指定事業所番号（右） -->
-  <table style="position:absolute;right:35pt;top:90pt;">
+  <!-- 指定事業所番号（右・CSSクラス tbl-fac: right:35pt; top:90pt） -->
+  <table class="tbl-fac">
     <tr>
-      <td class="lbl" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">指定事業所番号</td>
-      ${facNoStr.split('').map(c=>`<td style="border:0.9pt solid #000;width:18pt;height:20pt;text-align:center;font-size:10pt;">${c}</td>`).join('')}
+      <td class="lbl" style="white-space:nowrap;">指定事業所番号</td>
+      ${facNoStr.split('').map(c=>`<td>${c}</td>`).join('')}
     </tr>
     <tr>
-      <td style="border:0.9pt solid #000;font-size:8pt;padding:2pt;">事業者及びその事業所の名称</td>
+      <td class="lbl" style="font-size:8pt;white-space:nowrap;">事業者及びその事業所の名称</td>
       <td colspan="10" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">${f.facilityName||''}</td>
     </tr>
     <tr>
@@ -6824,13 +6825,13 @@ window.onload = function() {
 
   <div class="tbl-shimei">下記のとおり請求します。</div>
 
-  <!-- 対象年月 -->
-  <table class="tbl-ym" style="position:absolute;left:50pt;top:353pt;">
+  <!-- 対象年月（CSSクラス tbl-ym: left:50pt; top:353pt） -->
+  <table class="tbl-ym">
     ${ymChars.split('').map(c=>`<td>${c==' '?'&nbsp;':c}</td>`).join('')}
   </table>
 
-  <!-- 請求金額 -->
-  <table style="position:absolute;left:50pt;top:383pt;border-collapse:collapse;">
+  <!-- 請求金額（CSSクラス tbl-seikyu-amt: left:50pt; top:388pt） -->
+  <table class="tbl-seikyu-amt">
     <tr>
       <td style="font-size:12pt;border:1.8pt solid #000;background:#e8e8e8;padding:4pt 8pt;white-space:nowrap;">請求金額</td>
       <td style="font-size:12pt;border:1.8pt solid #000;padding:4pt;background:#e8e8e8;text-align:center;">百万</td>
