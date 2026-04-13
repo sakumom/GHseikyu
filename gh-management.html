@@ -6419,14 +6419,14 @@ window.onload = function() {
                 .tbl-city .lbl { text-align:left; font-size:9pt; white-space:nowrap; border:none; border-bottom:0.5pt solid #000; width:70pt; padding-left:2pt; }
                 
                 /* 事業所番号エリア（右側）*/
-                .tbl-fac { right:35pt; top:90pt; }
+                .tbl-fac { right:35pt; top:136pt; }
                 .tbl-fac td { border:0.9pt solid #000; height:20pt; text-align:center; font-size:10pt; width:18pt; }
-                .tbl-fac .lbl { font-size:9pt; text-align:left; padding:1pt 2pt; border:0.9pt solid #000; }
+                .tbl-fac .lbl { font-size:9pt; text-align:left; padding:1pt 2pt; border:0.9pt solid #000; background:#e8e8e8; }
 
                 /* 受給者証番号 */
                 .tbl-cert { left:35.8pt; top:136pt; width:240pt; }
                 .tbl-cert td { border:0.9pt solid #000; height:20pt; text-align:center; font-size:10pt; width:15pt; }
-                .tbl-cert .lbl { text-align:left; font-size:9pt; white-space:nowrap; border:none; border-bottom:1.8pt solid #000; width:90pt; padding-left:2pt; }
+                .tbl-cert .lbl { text-align:left; font-size:9pt; white-space:nowrap; border:none; border-bottom:0.9pt solid #000; width:90pt; padding-left:2pt; }
 
                 /* 氏名エリア */
                 .tbl-name { left:35.8pt; top:156pt; width:240pt; }
@@ -6557,8 +6557,8 @@ window.onload = function() {
   <span class="p-title-small">（様式第三）</span>
   <div class="p-title-main">訓練等給付費等明細書</div>
   <div class="p-subtitle">（共同生活援助）</div>
-  <!-- 対象年月（top:56pt＝タイトルと同じ高さ。指定事業所番号 top:90pt と重ならない） -->
-  <table style="position:absolute;right:35pt;top:56pt;border-collapse:collapse;">
+  <!-- 対象年月（市町村番号と同じ高さ top:90pt） -->
+  <table style="position:absolute;right:35pt;top:90pt;border-collapse:collapse;">
     <tr>${(ymDisp+'分').split('').map(c=>`<td style="border:0.9pt solid #000;min-width:14pt;height:18pt;text-align:center;font-size:9pt;padding:1pt 2pt;">${c}</td>`).join('')}</tr>
   </table>
 
@@ -6574,20 +6574,20 @@ window.onload = function() {
     </tr>
   </table>
 
-  <!-- 指定事業所番号（右・CSSクラス tbl-fac: right:35pt; top:90pt） -->
+  <!-- 指定事業所番号（右・CSSクラス tbl-fac: right:35pt; top:136pt） -->
   <table class="tbl-fac">
     <tr>
+      <td rowspan="3" style="border:0.9pt solid #000;font-size:8pt;padding:2pt;writing-mode:vertical-rl;text-align:center;width:14pt;">請<br>求<br>事<br>業<br>者</td>
       <td class="lbl" style="white-space:nowrap;">指定事業所番号</td>
       ${facNoStr.split('').map(c=>`<td>${c}</td>`).join('')}
     </tr>
     <tr>
-      <td rowspan="2" style="border:0.9pt solid #000;font-size:8pt;padding:2pt;writing-mode:vertical-rl;text-align:center;width:14pt;">請<br>求<br>事<br>業<br>者</td>
       <td class="lbl" style="font-size:8pt;white-space:nowrap;">事業者及びその<br>事業所の名称</td>
-      <td colspan="9" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">${f.facilityName||''}</td>
+      <td colspan="10" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;height:25pt;">${f.facilityName||''}</td>
     </tr>
     <tr>
       <td class="lbl" style="font-size:8pt;">&nbsp;</td>
-      <td colspan="5" style="border:0.9pt solid #000;"></td>
+      <td colspan="6" style="border:0.9pt solid #000;"></td>
       <td class="lbl" style="font-size:8pt;white-space:nowrap;">地域区分</td>
       <td colspan="3" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">${areaName}</td>
     </tr>
@@ -6596,7 +6596,7 @@ window.onload = function() {
   <!-- 受給者証番号 -->
   <table style="position:absolute;left:35.8pt;top:136pt;">
     <tr>
-      <td style="border:none;font-size:9pt;padding:2pt;border-bottom:1.8pt solid #000;">受給者証番号</td>
+      <td style="border:none;font-size:9pt;padding:2pt;border-bottom:0.9pt solid #000;">受給者証番号</td>
       ${certNoStr.split('').map(c=>`<td style="border:0.9pt solid #000;width:15pt;height:20pt;text-align:center;font-size:10pt;">${c}</td>`).join('')}
     </tr>
   </table>
