@@ -6415,7 +6415,7 @@ window.onload = function() {
                 
                 /* 市町村番号エリア */
                 .tbl-city { left:35.8pt; top:90pt; width:190pt; border:1.5pt solid #000; }
-                .tbl-city td { border:0.5pt solid #000; height:30pt; text-align:center; font-size:10pt; width:20pt; }
+                .tbl-city td { border:0.5pt solid #000; height:15pt; text-align:center; font-size:10pt; width:20pt; }
                 .tbl-city .lbl { text-align:left; font-size:9pt; white-space:nowrap; border:none; border-bottom:0.5pt solid #000; width:70pt; padding-left:2pt; }
                 
                 /* 事業所番号エリア（右側）*/
@@ -6565,14 +6565,13 @@ window.onload = function() {
   <!-- 市町村番号 -->
   <table class="tbl-city">
     <tr>
-      <td class="lbl" rowspan="2">市町村番号</td>
+      <td class="lbl">市町村番号</td>
       ${cityNoStr.split('').map(c=>`<td>${c}</td>`).join('')}
     </tr>
     <tr>
+      <td class="lbl" style="font-size:8pt;">助成自治体番号</td>
       ${Array(6).fill('<td>&nbsp;</td>').join('')}
     </tr>
-    <tr><td class="lbl" colspan="7" style="font-size:8pt;">助成自治体番号</td></tr>
-    <tr>${Array(6).fill('<td>&nbsp;</td>').join('')}<td class="lbl" style="font-size:8pt;"></td></tr>
   </table>
 
   <!-- 指定事業所番号（右・CSSクラス tbl-fac: right:35pt; top:90pt） -->
@@ -6582,12 +6581,15 @@ window.onload = function() {
       ${facNoStr.split('').map(c=>`<td>${c}</td>`).join('')}
     </tr>
     <tr>
-      <td class="lbl" style="font-size:8pt;white-space:nowrap;">事業者及びその事業所の名称</td>
-      <td colspan="10" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">${f.facilityName||''}</td>
+      <td rowspan="2" style="border:0.9pt solid #000;font-size:8pt;padding:2pt;writing-mode:vertical-rl;text-align:center;width:14pt;">請<br>求<br>事<br>業<br>者</td>
+      <td class="lbl" style="font-size:8pt;white-space:nowrap;">事業者及びその<br>事業所の名称</td>
+      <td colspan="9" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">${f.facilityName||''}</td>
     </tr>
     <tr>
-      <td style="border:0.9pt solid #000;font-size:9pt;padding:2pt;writing-mode:vertical-rl;text-align:center;" rowspan="3">請<br>求<br>事<br>業<br>者</td>
-      <td colspan="10" style="border:0.9pt solid #000;font-size:8pt;padding:2pt;">&nbsp;</td>
+      <td class="lbl" style="font-size:8pt;">&nbsp;</td>
+      <td colspan="5" style="border:0.9pt solid #000;"></td>
+      <td class="lbl" style="font-size:8pt;white-space:nowrap;">地域区分</td>
+      <td colspan="3" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">${areaName}</td>
     </tr>
   </table>
 
@@ -6611,15 +6613,7 @@ window.onload = function() {
     </tr>
   </table>
 
-  <!-- 地域区分 -->
-  <table style="position:absolute;right:35pt;top:200pt;">
-    <tr>
-      <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;">地域区分</td>
-      <td style="border:0.9pt solid #000;font-size:10pt;padding:2pt 6pt;">${areaName}</td>
-    </tr>
-  </table>
-
-  <!-- 利用者負担上限月額 -->
+<!-- 利用者負担上限月額 -->
   <table style="position:absolute;left:35.8pt;top:215pt;width:524pt;">
     <tr>
       <td style="border:1.8pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;">利用者負担上限月額　①</td>
