@@ -6579,10 +6579,10 @@ window.onload = function() {
     <tr>
       <td rowspan="3" style="border:0.9pt solid #000;font-size:8pt;padding:2pt;writing-mode:vertical-rl;text-align:center;width:14pt;">請求事業者</td>
       <td class="lbl" style="white-space:nowrap;">指定事業所番号</td>
-      ${facNoStr.split('').map(c=>`<td>${c}</td>`).join('')}
+      ${facNoStr.split('').map(c=>`<td style="width:18pt;">${c}</td>`).join('')}
     </tr>
     <tr>
-      <td class="lbl" style="font-size:8pt;white-space:nowrap;">事業者及びその<br>事業所の名称</td>
+      <td class="lbl" style="font-size:8pt;white-space:nowrap;">事業者及び<br>その事業所<br>の名称</td>
       <td colspan="10" style="border:0.9pt solid #000;font-size:9pt;padding:2pt;height:25pt;">${f.facilityName||''}</td>
     </tr>
     <tr>
