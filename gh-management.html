@@ -6419,7 +6419,7 @@ window.onload = function() {
                 .tbl-city .lbl { text-align:left; font-size:9pt; white-space:nowrap; border:none; border-bottom:0.5pt solid #000; width:70pt; padding-left:2pt; }
                 
                 /* 事業所番号エリア（右側）*/
-                .tbl-fac { right:35pt; top:136pt; }
+                .tbl-fac { right:15pt; top:136pt; }
                 .tbl-fac td { border:0.9pt solid #000; height:20pt; text-align:center; font-size:10pt; width:18pt; }
                 .tbl-fac .lbl { font-size:9pt; text-align:left; padding:1pt 2pt; border:0.9pt solid #000; background:#e8e8e8; }
 
@@ -6598,6 +6598,7 @@ window.onload = function() {
     <tr>
       <td style="border:0.9pt solid #000;font-size:9pt;padding:2pt;">受給者証番号</td>
       ${certNoStr.split('').map(c=>`<td style="border:0.9pt solid #000;width:15pt;height:20pt;text-align:center;font-size:10pt;">${c}</td>`).join('')}
+      <td rowspan="3" style="border:none;width:25pt;"></td>
     </tr>
     <tr>
       <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;vertical-align:middle;">支給決定障害者等<br>氏名</td>
