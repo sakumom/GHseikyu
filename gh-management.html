@@ -13,6 +13,10 @@
         }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -654,13 +658,119 @@
         .history-link { padding: 4px 6px; background: #e8f0fe; color: #667eea; border-radius: 4px; text-align: center; font-size: 0.8em; cursor: pointer; text-decoration: underline; }
         .history-link:hover { background: #667eea; color: white; }
         .history-row-label { font-size: 0.75em; color: #888; margin-bottom: 2px; }
+
+        /* ===== ログイン画面 ===== */
+        #loginScreen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 50px 40px;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        .login-card h2 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.6em;
+        }
+        .login-card p.subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+        .login-card .form-group {
+            text-align: left;
+            margin-bottom: 18px;
+        }
+        .login-card .form-group input {
+            font-size: 15px;
+        }
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: opacity 0.2s;
+        }
+        .login-btn:hover { opacity: 0.88; }
+        .login-error {
+            color: #e53935;
+            font-size: 0.9em;
+            margin-top: 12px;
+            min-height: 20px;
+        }
+        .login-loading {
+            color: #667eea;
+            font-size: 0.9em;
+            margin-top: 12px;
+        }
+
+        /* ===== ログアウトボタン ===== */
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 24px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.2s;
+        }
+        .logout-btn:hover { background: rgba(255,255,255,0.35); }
+        .header-user-email {
+            font-size: 0.8em;
+            opacity: 0.8;
+            margin-top: 4px;
+        }
+        .header { position: relative; }
     </style>
 </head>
 <body>
+    <!-- ログイン画面 -->
+    <div id="loginScreen" style="display:none;">
+        <div class="login-card">
+            <h2>🏠 GHseikyu</h2>
+            <p class="subtitle">グループホーム請求管理システム</p>
+            <div class="form-group">
+                <label>メールアドレス</label>
+                <input type="email" id="loginEmail" placeholder="example@email.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label>パスワード</label>
+                <input type="password" id="loginPassword" placeholder="パスワード" autocomplete="current-password"
+                    onkeydown="if(event.key==='Enter') doLogin()">
+            </div>
+            <button class="login-btn" onclick="doLogin()">ログイン</button>
+            <div class="login-error" id="loginError"></div>
+            <div class="login-loading" id="loginLoading" style="display:none;">読み込み中...</div>
+        </div>
+    </div>
+
+    <!-- メインアプリ -->
+    <div id="mainApp" style="display:none;">
     <div class="container">
         <div class="header">
             <h1>🏠 グループホーム請求管理システム v4.13</h1>
             <p>障害者共同生活援助サービス</p>
+            <p class="header-user-email" id="loggedInUserEmail"></p>
+            <button class="logout-btn" onclick="doLogout()">ログアウト</button>
         </div>
 
         <div class="tabs">
@@ -2390,28 +2500,124 @@
     </div>
 
     <script>
-        // データストレージ
-        let users = JSON.parse(localStorage.getItem('gh_users') || '[]');
-        let records = JSON.parse(localStorage.getItem('gh_records') || '{}');
-        let facility = JSON.parse(localStorage.getItem('gh_facility') || '{}');
-        let buildings = JSON.parse(localStorage.getItem('gh_buildings') || '[]');
-        
+        // ===== Firebase 初期化 =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyDtG1tI1y8Y20bU4wCTKgbJfZdVQ7EAot8",
+            authDomain: "ghseikyu-17649.firebaseapp.com",
+            projectId: "ghseikyu-17649",
+            storageBucket: "ghseikyu-17649.firebasestorage.app",
+            messagingSenderId: "245376886635",
+            appId: "1:245376886635:web:f7b75ae7f790ebcb904e2e"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        let currentUser = null;
+
+        // ===== Firestore データ操作 =====
+        async function saveData(key, value) {
+            if (!currentUser) return;
+            try {
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('data').doc(key).set({ value: JSON.stringify(value) });
+            } catch (e) {
+                console.error('Firestore save error:', key, e);
+            }
+        }
+
+        async function loadAllData() {
+            if (!currentUser) return;
+            const keys = ['gh_users','gh_records','gh_facility','gh_buildings',
+                          'gh_limited_entries','gh_staff_list','gh_daily_records','gh_confirmations'];
+            const docs = await Promise.all(
+                keys.map(k => db.collection('users').doc(currentUser.uid).collection('data').doc(k).get())
+            );
+            users              = docs[0].exists ? JSON.parse(docs[0].data().value) : [];
+            records            = docs[1].exists ? JSON.parse(docs[1].data().value) : {};
+            facility           = docs[2].exists ? JSON.parse(docs[2].data().value) : {};
+            buildings          = docs[3].exists ? JSON.parse(docs[3].data().value) : [];
+            limitedEntries     = docs[4].exists ? JSON.parse(docs[4].data().value) : [];
+            staffList          = docs[5].exists ? JSON.parse(docs[5].data().value) : [];
+            dailyRecords       = docs[6].exists ? JSON.parse(docs[6].data().value) : {};
+            exportConfirmations= docs[7].exists ? JSON.parse(docs[7].data().value) : {};
+        }
+
+        // ===== 認証操作 =====
+        async function doLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errEl = document.getElementById('loginError');
+            const loadEl = document.getElementById('loginLoading');
+            errEl.textContent = '';
+            if (!email || !password) { errEl.textContent = 'メールアドレスとパスワードを入力してください。'; return; }
+            loadEl.style.display = '';
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (e) {
+                loadEl.style.display = 'none';
+                switch (e.code) {
+                    case 'auth/user-not-found':
+                    case 'auth/wrong-password':
+                    case 'auth/invalid-credential':
+                        errEl.textContent = 'メールアドレスまたはパスワードが正しくありません。'; break;
+                    case 'auth/invalid-email':
+                        errEl.textContent = 'メールアドレスの形式が正しくありません。'; break;
+                    case 'auth/too-many-requests':
+                        errEl.textContent = 'ログイン試行が多すぎます。しばらく経ってから再試行してください。'; break;
+                    default:
+                        errEl.textContent = 'ログインに失敗しました: ' + e.message;
+                }
+            }
+        }
+
+        function doLogout() {
+            if (confirm('ログアウトしますか？')) {
+                auth.signOut();
+            }
+        }
+
+        // ===== 認証状態の監視 =====
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('loginLoading').style.display = 'none';
+                document.getElementById('mainApp').style.display = '';
+                document.getElementById('loggedInUserEmail').textContent = user.email;
+                await loadAllData();
+                initApp();
+            } else {
+                currentUser = null;
+                users = []; records = {}; facility = {}; buildings = [];
+                limitedEntries = []; staffList = []; dailyRecords = {}; exportConfirmations = {};
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('loginScreen').style.display = 'flex';
+            }
+        });
+
+        // ===== データストレージ（インメモリ） =====
+        let users = [];
+        let records = {};
+        let facility = {};
+        let buildings = [];
+
         let currentYear = new Date().getFullYear();
         let currentMonth = new Date().getMonth();
         let selectedUserId = null;
         let selectedDate = null;
 
-        // 初期化
-        document.addEventListener('DOMContentLoaded', () => {
+        // ===== アプリ初期化 =====
+        function initApp() {
             loadFacilityInfo();
             renderBuildingList();
             renderUserList();
             updateUserSelector();
             updateCalendar();
             renderLimitedTable();
+            renderStaffList();
             updateUnitOptions();
             displayFacilityInfo();
-            
+
             const today = new Date();
             document.getElementById('exportMonth').value =
                 `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
@@ -2440,7 +2646,7 @@
                 const fContent = document.getElementById(savedFacilityTab);
                 if (fContent) fContent.classList.add('active');
             }
-        });
+        }
 
         // タブ切り替え
         function showTab(tabName) {
@@ -2518,7 +2724,7 @@
         }
 
         // ========== 期間限定算定情報 ==========
-        let limitedEntries = JSON.parse(localStorage.getItem('gh_limited_entries') || '[]');
+        let limitedEntries = [];
 
         function renderLimitedTable() {
             const tbody = document.getElementById('limitedPeriodTableBody');
@@ -2580,7 +2786,7 @@
             } else {
                 limitedEntries.push(entry);
             }
-            localStorage.setItem('gh_limited_entries', JSON.stringify(limitedEntries));
+            saveData('gh_limited_entries', limitedEntries);
             renderLimitedTable();
             closeLimitedModal();
         }
@@ -2588,7 +2794,7 @@
         function deleteLimitedEntry(id) {
             if (!confirm('削除しますか？')) return;
             limitedEntries = limitedEntries.filter(e => e.id !== id);
-            localStorage.setItem('gh_limited_entries', JSON.stringify(limitedEntries));
+            saveData('gh_limited_entries', limitedEntries);
             renderLimitedTable();
         }
 
@@ -2598,7 +2804,7 @@
 
         // ========== 職員管理 ==========
         const STAFF_PAGE_SIZE = 15;
-        let staffList = JSON.parse(localStorage.getItem('gh_staff_list') || '[]');
+        let staffList = [];
         let staffCurrentPage = 1;
 
         function renderStaffList() {
@@ -2726,11 +2932,9 @@
             } else {
                 staffList.push(entry);
             }
-            localStorage.setItem('gh_staff_list', JSON.stringify(staffList));
+            saveData('gh_staff_list', staffList);
             showStaffList();
         }
-
-        renderStaffList();
 
         // ========== 日報・記録 ==========
         const DAILY_COLS = ['勤務実績','服薬管理','清掃支援','金銭管理','相談支援','その他記録'];
@@ -2738,7 +2942,7 @@
         let dailyYear = new Date().getFullYear();
         let dailyMonth = new Date().getMonth() + 1; // 1-12
         let dailySelectedBuildingId = null;
-        let dailyRecords = JSON.parse(localStorage.getItem('gh_daily_records') || '{}');
+        let dailyRecords = {};
 
         function showDailySubTab(paneId, btn) {
             document.querySelectorAll('#daily-record .building-inner-tab').forEach(t => t.classList.remove('active'));
@@ -3035,7 +3239,7 @@
             if (!dailyRecords[bldId]) dailyRecords[bldId] = {};
             if (!dailyRecords[bldId][dk]) dailyRecords[bldId][dk] = {};
             dailyRecords[bldId][dk].勤務実績 = { rows };
-            localStorage.setItem('gh_daily_records', JSON.stringify(dailyRecords));
+            saveData('gh_daily_records', dailyRecords);
             exitDailyWorkEditMode();
             renderDailyWorkView();
         }
@@ -3067,7 +3271,7 @@
                 data[f.id] = el ? el.checked : false;
             });
             dailyRecords[bldId][dk].支援内容 = data;
-            localStorage.setItem('gh_daily_records', JSON.stringify(dailyRecords));
+            saveData('gh_daily_records', dailyRecords);
             showSupportSaveToast();
         }
 
@@ -3117,7 +3321,7 @@
             if (!dailyRecords[bldId]) dailyRecords[bldId] = {};
             if (!dailyRecords[bldId][dk]) dailyRecords[bldId][dk] = {};
             dailyRecords[bldId][dk]['その他記録'] = { text };
-            localStorage.setItem('gh_daily_records', JSON.stringify(dailyRecords));
+            saveData('gh_daily_records', dailyRecords);
             // トースト
             const toast = document.getElementById('otherSaveToast');
             if (toast) {
@@ -3194,7 +3398,7 @@
                 facility[id] = checkbox ? checkbox.checked : false;
             });
 
-            localStorage.setItem('gh_facility', JSON.stringify(facility));
+            saveData('gh_facility', facility);
             displayFacilityInfo();
             alert('✅ 事業所情報を保存しました！');
         }
@@ -3325,7 +3529,7 @@
                 }
             };
             buildings.push(building);
-            localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+            saveData('gh_buildings', buildings);
             selectedBuildingId = building.id;
             renderBuildingList();
         }
@@ -3334,7 +3538,7 @@
             if (confirm('この建物を削除しますか？')) {
                 buildings = buildings.filter(b => b.id !== id);
                 if (selectedBuildingId === id) selectedBuildingId = buildings.length > 0 ? buildings[0].id : null;
-                localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+                saveData('gh_buildings', buildings);
                 renderBuildingList();
                 updateUnitOptions();
             }
@@ -3347,7 +3551,7 @@
                     { id: 'nerima', name: 'Nerima. settle', nameKana: 'ネリマセトル', manager: '', zip: '', prefecture: '', city: '', address: '', buildingName: '', tel: '', fax: '', email: '', totalRooms: 5, nightSupportType: '', largeScaleReduction: '', history: {basic:{},calc:{},users:{}} },
                     { id: 'nerima-west', name: 'Nerima. settle west', nameKana: 'ネリマセトルウエスト', manager: '', zip: '', prefecture: '', city: '', address: '', buildingName: '', tel: '', fax: '', email: '', totalRooms: 8, nightSupportType: '', largeScaleReduction: '大規模住居等減算（入居定員8人以上）', history: {basic:{},calc:{},users:{}} }
                 ];
-                localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+                saveData('gh_buildings', buildings);
             }
 
             // 初期選択
@@ -3618,7 +3822,7 @@
                 };
             }
 
-            localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+            saveData('gh_buildings', buildings);
             alert(`✅ ${['basic','calc','users'].includes(type) ? {basic:'基本情報',calc:'算定情報',users:'利用者'}[type] : type}を保存しました！`);
             renderBuildingDetail();
         }
@@ -3645,7 +3849,7 @@
             const building = buildings.find(b => b.id === id);
             if (building) {
                 building[field] = value;
-                localStorage.setItem('gh_buildings', JSON.stringify(buildings));
+                saveData('gh_buildings', buildings);
                 if (field === 'name') {
                     renderBuildingList(); // サイドバーも更新
                 } else {
@@ -3995,7 +4199,7 @@
                 userHistory: { basic: {}, calc: {} }
             };
             users.push(newUser);
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             currentUserId = newUser.id;
             showUserDetail(newUser.id);
         }
@@ -4106,7 +4310,7 @@
                 user.userHistory.calc[histKey] = { ...prevSnap, savedAt: now.toISOString() };
             }
 
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             updateUserSelector();
             alert('✅ 保存しました！');
         }
@@ -4195,7 +4399,7 @@
         function deleteUser(id) {
             if (confirm('この利用者を削除しますか？')) {
                 users = users.filter(u => u.id !== id);
-                localStorage.setItem('gh_users', JSON.stringify(users));
+                saveData('gh_users', users);
                 renderUserList();
                 updateUserSelector();
             }
@@ -4312,7 +4516,7 @@
                 user.certificates.push(cert);
             }
 
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             cancelCertificateForm();
             renderCertificateHistory();
             alert('✅ 受給者証を保存しました！');
@@ -4323,7 +4527,7 @@
             const user = users.find(u => u.id === currentUserId);
             if (!user || !user.certificates) return;
             user.certificates.splice(index, 1);
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderCertificateHistory();
         }
 
@@ -4377,7 +4581,7 @@
             copy.certIssueDate = '';
             copy.savedAt = '';
             user.certificates.push(copy);
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             showCertificateForm(user.certificates.length - 1);
             renderCertificateHistory();
         }
@@ -4436,7 +4640,7 @@
             const user = users.find(u => u.id === currentUserId);
             if (!user.emergencyContacts) user.emergencyContacts = [];
             user.emergencyContacts.push({ name, relationship: rel, tel });
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderBasic2();
         }
         function editEmergencyContact(i) {
@@ -4447,14 +4651,14 @@
             ec.tel = prompt('電話:', ec.tel) || ec.tel;
             ec.address = prompt('住所:', ec.address||'') || ec.address || '';
             ec.note = prompt('備考:', ec.note||'') || ec.note || '';
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderBasic2();
         }
         function deleteEmergencyContact(i) {
             if (!confirm('削除しますか？')) return;
             const user = users.find(u => u.id === currentUserId);
             user.emergencyContacts.splice(i, 1);
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderBasic2();
         }
         function addMedicalFacility() {
@@ -4466,7 +4670,7 @@
             const user = users.find(u => u.id === currentUserId);
             if (!user.medicalFacilities) user.medicalFacilities = [];
             user.medicalFacilities.push({ name, doctor, tel, address });
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderBasic2();
         }
         function editMedicalFacility(i) {
@@ -4476,14 +4680,14 @@
             mf.doctor = prompt('主治医:', mf.doctor) || mf.doctor;
             mf.tel = prompt('電話番号:', mf.tel) || mf.tel;
             mf.address = prompt('住所:', mf.address||'') || mf.address || '';
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderBasic2();
         }
         function deleteMedicalFacility(i) {
             if (!confirm('削除しますか？')) return;
             const user = users.find(u => u.id === currentUserId);
             user.medicalFacilities.splice(i, 1);
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderBasic2();
         }
         function editPersonality() {
@@ -4491,7 +4695,7 @@
             const val = prompt('性格・趣味など:', user.personality||'');
             if (val === null) return;
             user.personality = val;
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderBasic2();
         }
         function addMoveInHistory() {
@@ -4500,7 +4704,7 @@
             const user = users.find(u => u.id === currentUserId);
             if (!user.moveInHistory) user.moveInHistory = [];
             user.moveInHistory.push({ content: val, date: new Date().toISOString() });
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderBasic2();
         }
 
@@ -4537,7 +4741,7 @@
             const user = users.find(u => u.id === currentUserId);
             if (!user.diseases) user.diseases = [];
             user.diseases.push({ name, onsetDate, hospital, note });
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderMedical();
         }
         function editDisease(i) {
@@ -4547,14 +4751,14 @@
             d.onsetDate = prompt('発症年月日:', d.onsetDate||'') || d.onsetDate || '';
             d.hospital = prompt('医療機関名:', d.hospital||'') || d.hospital || '';
             d.note = prompt('備考:', d.note||'') || d.note || '';
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderMedical();
         }
         function deleteDisease(i) {
             if (!confirm('削除しますか？')) return;
             const user = users.find(u => u.id === currentUserId);
             user.diseases.splice(i, 1);
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderMedical();
         }
         function addMedicine() {
@@ -4564,7 +4768,7 @@
             const user = users.find(u => u.id === currentUserId);
             if (!user.medicines) user.medicines = [];
             user.medicines.push({ name, dose });
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             const ml = document.getElementById('medicineList');
             if (ml) ml.innerHTML = (user.medicines||[]).map((m,i)=>`<div style="padding:8px; border-bottom:1px solid #eee;">${m.name} ${m.dose}</div>`).join('');
         }
@@ -4573,7 +4777,7 @@
             const val = prompt('留意点／特記事項:', user.medicalNotes||'');
             if (val === null) return;
             user.medicalNotes = val;
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderMedical();
         }
 
@@ -4592,7 +4796,7 @@
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderContractList();
         }
 
@@ -4658,7 +4862,7 @@
             c.contractEnd = prompt('契約終了日:', c.contractEnd||'') || c.contractEnd || '';
             c.svcEnd = prompt('サービス終了日:', c.svcEnd||'') || c.svcEnd || '';
             c.updatedAt = new Date().toISOString();
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderContractList();
             showContractDetail(i);
         }
@@ -4667,7 +4871,7 @@
             if (!confirm('削除しますか？')) return;
             const user = users.find(u => u.id === currentUserId);
             user.contracts.splice(i, 1);
-            localStorage.setItem('gh_users', JSON.stringify(users));
+            saveData('gh_users', users);
             renderContractList();
             document.getElementById('contractDetail').style.display = 'none';
         }
@@ -4846,7 +5050,7 @@
                 records[selectedUserId][dateStr] = { status, date: dateStr };
             }
 
-            localStorage.setItem('gh_records', JSON.stringify(records));
+            saveData('gh_records', records);
             updateCalendar();
             alert(`✅ ${currentYear}年${currentMonth + 1}月を「${status}」で埋めました`);
         }
@@ -4870,7 +5074,7 @@
                 }
             }
 
-            localStorage.setItem('gh_records', JSON.stringify(records));
+            saveData('gh_records', records);
             updateCalendar();
             alert(`✅ ${currentYear}年${currentMonth + 1}月の記録を削除しました`);
         }
@@ -5073,7 +5277,7 @@
                 d.setDate(d.getDate() + 1);
             }
 
-            localStorage.setItem('gh_records', JSON.stringify(records));
+            saveData('gh_records', records);
             updateCalendar();
             closeModal();
             alert(`✅ ${count}件の記録を登録しました`);
@@ -5101,7 +5305,7 @@
 
         // ===== 請求データ出力 =====
         // ===== 請求確定管理 =====
-        let exportConfirmations = JSON.parse(localStorage.getItem('gh_confirmations') || '{}');
+        let exportConfirmations = {};
 
         function initExportTab() {
             // 事業所名表示
@@ -5180,7 +5384,7 @@
                 };
                 alert('✅ ' + label + ' を確定しました');
             }
-            localStorage.setItem('gh_confirmations', JSON.stringify(exportConfirmations));
+            saveData('gh_confirmations', exportConfirmations);
             updateConfirmStatus(monthVal);
         }
 
@@ -5459,13 +5663,13 @@ window.onload = function() {
     <tr>
       <td class="gh-lbl" rowspan="2" style="width:26mm;">利用者負担上限額<br>管理事業所</td>
       <td class="gh-lbl" style="width:22mm;">指定事業所番号</td>
-      <td colspan="10"></td>
+      <td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td>
       <td class="gh-lbl" style="width:12mm;">管理結果</td>
       <td colspan="3"></td>
       <td class="gh-lbl" style="width:14mm;">管理結果額</td>
-      <td colspan="3"></td>
+      <td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td><td class="gh-c"></td>
     </tr>
-    <tr><td class="gh-lbl">事業所名称</td><td colspan="17"></td></tr>
+    <tr><td class="gh-lbl">事業所名称</td><td colspan="19"></td></tr>
   </table>
   <table class="gh-tbl" style="margin-bottom:1.5mm;">
     <tr>
@@ -5730,7 +5934,6 @@ window.onload = function() {
             const f = facility;
             const reiwa = parseInt(serviceYm.substring(0,4)) - 2018;
             const monNum = parseInt(serviceYm.substring(4,6));
-            const ymDisp = `令和${String(reiwa).padStart(2,'0')}年${String(monNum).padStart(2,'0')}月`;
             const startW = cert.certValidFrom ? (() => {
                 const y2 = parseInt(cert.certValidFrom.replace(/-/g,'').substring(0,4)) - 2018;
                 const m2 = cert.certValidFrom.replace(/-/g,'').substring(4,6);
@@ -5747,209 +5950,222 @@ window.onload = function() {
             const facNoStr = (f.facilityNumber||'').replace(/-/g,'').padStart(10,'0');
             const cityNoStr = cityCode.replace(/-/g,'').padStart(6,'0');
 
-            const W = 595.28, H = 841.89;
-            // 線幅定数（正しいPDFより）
             const LW_THICK = 1.8, LW_THIN = 0.9;
-            // フォント設定
-            doc.setFont('IPAMincho');
+            doc.setFont('IPAPMincho');
 
-            // ── 様式第三ラベル（左上）
+            // ── ページ外枠
+            doc.setLineWidth(LW_THIN);
+            doc.rect(20.0, 39.0, 555.0, 760.0);
+
+            // ── タイトル類
             doc.setFontSize(12);
             doc.text('（様式第三）', 31.6, 24.6);
-
-            // ── タイトル
-            doc.setFontSize(12);
             doc.text('訓練等給付費等明細書', 239.9, 56.0);
-
-            // ── 副タイトル
             doc.setFontSize(10);
             doc.text('（共同生活援助）', 266.5, 72.0);
 
-            // ── 年月 + 市町村番号エリア
-            // 市町村番号ラベル
+            // ── 市町村番号エリア (35,96)-(225,126) w=1.8
+            doc.setLineWidth(LW_THICK);
+            doc.rect(35.0, 96.0, 190.0, 30.0);
+            doc.line(35.8, 111.0, 225.8, 111.0);
             doc.setFontSize(9);
             doc.text('市町村番号', 36.0, 99.9);
-
-            // 市町村番号マス（各20pt幅）
+            doc.text('助成自治体番号', 36.0, 114.4);
             const cityBoxX = 105.6, cityBoxY = 96.5, cityBoxH = 30, cityBoxW = 20;
             doc.setLineWidth(LW_THIN);
-            for(let i=0;i<6;i++) {
-                doc.rect(cityBoxX + i*cityBoxW, cityBoxY, cityBoxW, cityBoxH);
+            for(let i=0; i<=6; i++) doc.line(cityBoxX+i*cityBoxW, 96.5, cityBoxX+i*cityBoxW, 126.5);
+            for(let i=0; i<6; i++) {
                 doc.setFontSize(10);
-                doc.text(cityNoStr[i]||' ', cityBoxX + i*cityBoxW + cityBoxW/2, cityBoxY+20, {align:'center'});
+                doc.text(cityNoStr[i]||' ', cityBoxX+i*cityBoxW+cityBoxW/2, cityBoxY+20, {align:'center'});
             }
 
-            // 年月
-            doc.setFontSize(9);
-            doc.text(`${ymDisp}分`, 350, 99.9);
-
-            // 助成自治体番号
-            doc.text('助成自治体番号', 36.0, 114.4);
-            doc.setLineWidth(LW_THIN);
-            for(let i=0;i<6;i++) {
-                doc.rect(cityBoxX + i*cityBoxW, 111.0, cityBoxW, 15);
-            }
-
-            // 区切り線（太線）
+            // ── 年月エリア (415,96)-(555,111) w=1.8
             doc.setLineWidth(LW_THICK);
-            doc.line(35.8, 111.0, 225.8, 111.0);
-
-            // ── 右側：指定事業所番号ブロック
-            doc.setFontSize(9);
-            doc.text('指定事業所番号', 291.0, 132.0);
-            const facBoxX = 375, facBoxY = 126, facBoxW = 18, facBoxH = 20;
+            doc.rect(415.0, 96.0, 140.0, 15.0);
             doc.setLineWidth(LW_THIN);
-            for(let i=0;i<10;i++) {
-                doc.rect(facBoxX + i*facBoxW, facBoxY, facBoxW, facBoxH);
-                doc.setFontSize(10);
-                doc.text(facNoStr[i]||' ', facBoxX + i*facBoxW + facBoxW/2, facBoxY+14, {align:'center'});
-            }
-
-            // 請（縦書きラベル）
+            [450,465,480,495,510,525].forEach(x => doc.line(x, 96.0, x, 111.0));
+            const reiwaStr = String(reiwa).padStart(2,'0');
+            const monStr   = String(monNum).padStart(2,'0');
             doc.setFontSize(10);
-            ['請','求','事','業','者'].forEach((ch,i) => {
-                doc.text(ch, 277.2, 141 + i*18);
-            });
+            doc.text('令和', 418.4, 97.9);
+            doc.text(reiwaStr[0], 457.5, 97.9, {align:'center'});
+            doc.text(reiwaStr[1], 472.5, 97.9, {align:'center'});
+            doc.text('年', 487.5, 97.9, {align:'center'});
+            doc.text(monStr[0],  502.5, 97.9, {align:'center'});
+            doc.text(monStr[1],  517.5, 97.9, {align:'center'});
+            doc.text('月分', 530.0, 97.9);
 
-            // 事業者名称
+            // ── 請求事業者エリア (275,126)-(555.3,216) w=1.8
+            doc.setLineWidth(LW_THICK);
+            doc.rect(275.0, 126.0, 280.3, 90.0);
+            doc.setLineWidth(LW_THIN);
+            doc.line(289.8, 127.1, 289.8, 216.5);
+            doc.line(354.8, 127.1, 354.8, 216.5);
+            doc.line(289.8, 146.0, 554.8, 146.0);
+            doc.line(355.3, 201.0, 555.3, 201.0);
             doc.setFontSize(10);
-            doc.text('事業者及びその事業所の名称', 296.8, 165.0);
-            doc.text(f.facilityName||'', 296.8, 183.0);
-
-            // 受給者証番号エリア
+            ['請','求','事','業','者'].forEach((ch,i) => doc.text(ch, 277.2, 141+i*18));
             doc.setFontSize(9);
-            doc.text('受給者証番号', 36.0, 153.0);
+            doc.text('指定事業所番号', 291.0, 131.0);
+            // 指定事業所番号セル (354.8始まり 幅20 10個)
+            const facBoxX = 354.8, facBoxY = 126, facBoxW = 20, facBoxH = 20;
+            doc.setLineWidth(LW_THIN);
+            for(let i=0; i<=10; i++) doc.line(facBoxX+i*facBoxW, facBoxY, facBoxX+i*facBoxW, facBoxY+facBoxH);
+            for(let i=0; i<10; i++) {
+                doc.setFontSize(10);
+                doc.text(facNoStr[i]||' ', facBoxX+i*facBoxW+facBoxW/2, facBoxY+14, {align:'center'});
+            }
+            doc.setFontSize(10);
+            doc.text('事業者及び', 296.8, 165.0);
+            doc.text('その事業所', 297.3, 175.0);
+            doc.text('の名称', 306.7, 185.0);
+            doc.text(f.facilityName||'', 360.0, 185.0);
+
+            // ── 受給者証番号エリア (35,146)-(270,215) w=1.8
+            doc.setLineWidth(LW_THICK);
+            doc.rect(35.0, 146.0, 235.0, 69.0);
+            doc.setFontSize(10);
+            doc.text('受給者証番号', 36.0, 151.9);
             const certBoxX = 120.6, certBoxY = 146, certBoxW = 15, certBoxH = 20;
             doc.setLineWidth(LW_THIN);
-            for(let i=0;i<10;i++) {
-                doc.rect(certBoxX + i*certBoxW, certBoxY, certBoxW, certBoxH);
+            // 受給者証番号セル縦線＋左側ラベル縦仕切り（全行にわたる）
+            doc.line(120.6, 146.0, 120.6, 215.0);
+            for(let i=1; i<=10; i++) doc.line(certBoxX+i*certBoxW, certBoxY, certBoxX+i*certBoxW, certBoxY+certBoxH);
+            for(let i=0; i<10; i++) {
                 doc.setFontSize(10);
-                doc.text(certNo[i]||' ', certBoxX + i*certBoxW + certBoxW/2, certBoxY+14, {align:'center'});
+                doc.text(certNo[i]||' ', certBoxX+i*certBoxW+certBoxW/2, certBoxY+14, {align:'center'});
             }
-
-            // 受給者証番号の外枠下線
             doc.setLineWidth(LW_THIN);
             doc.line(35.3, 166.0, 270.3, 166.0);
-
-            // 支給決定障害者等氏名
-            doc.setFontSize(9);
-            doc.text('支給決定障害者等氏名', 36.0, 183.0);
-            doc.setFontSize(10);
-            doc.text(user.name||'', 125.0, 183.0);
             doc.line(35.6, 191.0, 270.6, 191.0);
-
-            // 支給決定に係る障害児氏名
-            doc.setFontSize(9);
-            doc.text('支給決定に係る障害児氏名', 36.0, 201.0);
-            doc.line(355.3, 201.0, 555.3, 201.0);
-
-            // 地域区分
-            doc.text('地域区分', 365.3, 204.0);
             doc.setFontSize(10);
-            doc.text(areaName, 415.0, 204.0);
+            doc.text('支給決定障害者等', 38.7, 167.7);
+            doc.text('氏名', 68.7, 177.7);
+            doc.text(user.name||'', 125.0, 175.0);
+            doc.text('支給決定に係る', 44.3, 192.3);
+            doc.text('障害児氏名', 53.0, 202.3);
 
-            // ── 太線 (利用者負担上限月額エリア上線)
-            doc.setLineWidth(LW_THICK);
-            doc.line(130.6, 226.0, 560.6, 226.0);  // 横太線
-            doc.line(130.6, 266.0, 560.6, 266.0);
-
-            // 利用者負担上限月額
-            doc.setFontSize(9);
-            doc.text('利用者負担上限月額　①', 36.0, 233.0);
-            doc.setFontSize(10);
-            doc.text(String(burdenLimit), 165.0, 233.0, {align:'right'});
-
-            // 障害支援区分
-            doc.setFontSize(9);
-            doc.text('障害支援区分', 360.0, 228.0);
-            doc.setFontSize(10);
-            doc.text(supportDisp, 430.0, 233.0);
-
-            // 上限月額区切りマス
-            const limitBoxX = 155.6, limitBoxY = 226.0, limitBoxW = 15, limitBoxH = 15;
+            // ── 地域区分（右側）
             doc.setLineWidth(LW_THIN);
-            doc.rect(155.6, 226.0, 60, 15);
-            [155.6, 170.6, 185.6, 200.6].forEach(x => doc.line(x, 226.0, x, 241.0));
+            doc.line(355.3, 201.0, 555.3, 201.0);
+            doc.setFontSize(10);
+            doc.text('地域区分', 365.3, 203.3);
+            doc.text(areaName, 415.0, 203.3);
 
-            // 利用者負担上限額管理事業所
-            doc.setFontSize(9);
-            doc.text('利用者負担上限額管理事業所', 36.0, 258.0);
-            doc.text('指定事業所番号', 140.0, 258.0);
-            doc.text('管理結果', 365.0, 258.0);
-            doc.text('管理結果額', 435.0, 258.0);
+            // ── 利用者負担上限月額 + 障害支援区分エリア (y=226, h=15)
+            doc.setFontSize(10);
+            const _umLblW = doc.getTextWidth('利用者負担上限月額　①') + 8;
+            const _umCellW = 15, _umX = 35.6, _umY = 226.0, _umH = 15.0;
             doc.setLineWidth(LW_THICK);
-            doc.line(130.6, 251.0, 130.6, 281.0);  // 縦太線
+            doc.rect(_umX, _umY, _umLblW + _umCellW * 5, _umH);
+            doc.setLineWidth(LW_THIN);
+            doc.line(_umX + _umLblW, _umY, _umX + _umLblW, _umY + _umH);
+            for(let i = 1; i < 5; i++) doc.line(_umX + _umLblW + i * _umCellW, _umY, _umX + _umLblW + i * _umCellW, _umY + _umH);
+            doc.text('利用者負担上限月額　①', _umX + 4, _umY + 2.5);
+            if(burdenLimit) {
+                const lStr = String(burdenLimit).padStart(5, ' ');
+                lStr.split('').forEach((c, i) => {
+                    if(c !== ' ') doc.text(c, _umX + _umLblW + i * _umCellW + _umCellW / 2, _umY + 2.5, {align:'center'});
+                });
+            }
+            // 障害支援区分（請求事業者左端 x=275 に左揃え・値幅20mm固定）
+            const _shLblW = doc.getTextWidth('障害支援区分') + 8;
+            const _shValW = 20 * 72 / 25.4;   // 20mm → pt
+            const _shX = 275.0;
+            doc.setLineWidth(LW_THICK);
+            doc.rect(_shX, _umY, _shLblW, _umH);
+            doc.rect(_shX + _shLblW, _umY, _shValW, _umH);
+            doc.text('障害支援区分', _shX + 4, _umY + 2.5);
+            if(supportDisp) doc.text(supportDisp, _shX + _shLblW + _shValW / 2, _umY + 2.5, {align:'center'});
+
+            // ── 管理事業所エリア (36.6,251)-(561.6,281) w=1.8
+            doc.setLineWidth(LW_THICK);
+            doc.rect(36.6, 251.0, 525.0, 30.0);
+            // 縦太線（管理事業所ラベル右端）
+            doc.line(130.6, 251.0, 130.6, 281.0);
+            // 横太線（行1と行2の境界）
+            doc.line(130.6, 266.0, 561.6, 266.0);
+            // 管理結果・管理結果額の縦太線
             doc.line(360.0, 251.0, 360.0, 266.0);
             doc.line(425.0, 251.0, 425.0, 266.0);
-
-            // 事業所名称
-            doc.setFontSize(9);
-            doc.text('事業所名称', 140.0, 273.0);
+            // 行1の細線
             doc.setLineWidth(LW_THIN);
-            doc.line(130.6, 266.5, 130.6, 281.0);
+            doc.line(210.0, 251.0, 210.0, 266.0);                                  // 指定事業所番号ラベル右端
+            [225,240,255,270,285,300,315,330,345].forEach(x => doc.line(x, 251.0, x, 266.0));  // 10セル区切り(9本)
+            doc.line(410.0, 251.0, 410.0, 266.0);                                  // 管理結果ラベル右端
+            [485,500,515,530,545].forEach(x => doc.line(x, 251.0, x, 266.0));      // 管理結果額5セル
+            // 行2の細線
+            doc.line(195.6, 266.0, 195.6, 281.0);                                  // 事業所名称ラベル右端
+            // テキスト
+            doc.setFontSize(10);
+            doc.text('利用者負担上限額', 42.3, 256.0);
+            doc.text('管理事業所', 57.3, 266.0);
+            doc.text('指定事業所番号', 135.6, 254.3);
+            doc.text('管理結果', 365.8, 254.4);
+            doc.text('管理結果額', 432.1, 254.4);
+            doc.text('事業所名称', 138.1, 269.4);
 
-            // ── サービス種別エリア（太線）
+            // ── サービス種別エリア (35,291)-(530,321) w=1.8
             doc.setLineWidth(LW_THICK);
+            doc.rect(35.0, 291.0, 495.0, 30.0);
             doc.line(100.0, 291.0, 100.0, 321.0);
             doc.line(265.0, 291.0, 265.0, 321.0);
             doc.line(430.0, 291.0, 430.0, 321.0);
             doc.line(480.0, 291.0, 480.0, 321.0);
-            doc.line(70.0, 306.0, 530.0, 306.0);
-
-            doc.setFontSize(9);
-            doc.text('サービス種別', 36.0, 297.0);
-            doc.setFontSize(10);
-            doc.text('3', 78, 299.0, {align:'center'});
-            doc.text('3', 93, 299.0, {align:'center'});
+            doc.line(70.0,  306.0, 530.0, 306.0);
             doc.setLineWidth(LW_THIN);
             [70,85].forEach(x => doc.line(x, 291.0, x, 321.0));
-
             doc.setFontSize(8);
-            doc.text('開始年月日', 103.0, 297.0);
+            doc.text('サービス', 39.7, 297.4);
+            doc.text('種別',     46.4, 305.4);
             doc.setFontSize(10);
-            doc.text(startW, 165.0, 296.0);
-            doc.setFontSize(8);
-            doc.text('終了年月日', 270.0, 297.0);
-            doc.text('入院日数', 435.0, 297.0);
+            doc.text('3', 78,  299.0, {align:'center'});
+            doc.text('3', 93,  299.0, {align:'center'});
+            doc.setFontSize(6);
+            doc.text('開始年月日', 103.3, 295.9);
+            doc.text('終了年月日', 265.9, 294.9);
+            doc.text('入院日数',   433.6, 294.9);
+            doc.text('外泊日数',   483.1, 295.0);
+            doc.setFontSize(10);
+            doc.text(startW, 110.0, 296.0);
             if(hosdays) doc.text(String(hosdays), 475, 297.0);
-            doc.text('外泊日数', 485.0, 297.0);
+            doc.setFontSize(6);
+            doc.text('開始年月日', 103.2, 309.5);
+            doc.text('終了年月日', 265.8, 309.6);
+            doc.text('入院日数',   434.1, 309.4);
+            doc.text('外泊日数',   484.4, 309.7);
+            doc.setFontSize(10);
+            ['年','月','日'].forEach((c,i) => doc.text(c, [347.5,380.8,417.4][i], 293.0));
+            ['年','月','日'].forEach((c,i) => doc.text(c, [183.8,216.8,252.5][i], 308.7));
+            ['年','月','日'].forEach((c,i) => doc.text(c, [347.5,380.8,417.4][i], 309.2));
 
-            // 2行目
-            doc.text('開始年月日', 103.0, 313.0);
-            doc.text('終了年月日', 270.0, 313.0);
-            doc.text('入院日数', 435.0, 313.0);
-            doc.text('外泊日数', 485.0, 313.0);
-
-            // ── 給付費明細欄（太枠）
+            // ── 給付費明細欄 (34.6,330.6)-(559.6,495.6) w=1.8
             doc.setLineWidth(LW_THICK);
+            doc.rect(34.6, 330.6, 525.0, 165.0);
             doc.line(51.0, 331.0, 51.0, 496.0);
             doc.line(176.0, 331.0, 176.0, 496.0);
             doc.line(266.0, 331.0, 266.0, 496.0);
             doc.line(340.1, 331.0, 340.1, 496.0);
             doc.line(371.5, 331.0, 371.5, 496.0);
             doc.line(445.1, 331.0, 445.1, 496.0);
-            doc.line(50.0, 346.0, 560.0, 346.0);
-
-            // ヘッダ行
-            doc.setFontSize(7);
-            doc.text('給付費明細欄', 37.0, 410, {angle:90});
+            doc.line(50.0,  346.0, 560.0, 346.0);
+            // 縦書きラベル
             doc.setFontSize(8);
-            doc.text('サービス内容', 110.0, 340.0, {align:'center'});
-            doc.text('サービスコード', 305.0, 340.0, {align:'center'});
-            doc.text('単位数', 352.0, 337.0, {align:'center'});
-            doc.text('回数', 405.0, 340.0, {align:'center'});
-            doc.text('サービス単位', 503.0, 340.0, {align:'center'});
-            doc.text('摘要', 550.0, 340.0, {align:'center'});
-
-            // 細線（コード欄の区切り）
+            ['給','付','費','明','細','欄'].forEach((c,i) => doc.text(c, 41.0, 376.3+i*8));
+            // ヘッダ
+            doc.text('サービス内容', 90.0,  335.2);
+            doc.text('サービスコード', 195.6, 334.2);
+            doc.text('単位数',       291.4, 333.9);
+            doc.text('回数',         346.2, 333.5);
+            doc.text('サービス単位', 381.9, 333.7);
+            doc.text('摘要',         490.0, 333.9);
+            // 細線
             doc.setLineWidth(LW_THIN);
             [191,206,221,236,251,281,296,311].forEach(x => doc.line(x, 346.0, x, 496.0));
-            [325.2, 356.0, 386.0, 416.0, 430.9].forEach(x => doc.line(x, 346.0, x, 496.0));
-
-            // 明細行描画
-            const rowH = 15;
-            const detailStartY = 346.0;
-            details.forEach((d, idx) => {
+            [325.2,356.0,386.0,416.0,430.9].forEach(x => doc.line(x, 346.0, x, 496.0));
+            // 明細行
+            const rowH = 15, detailStartY = 346.0;
+            details.forEach((d,idx) => {
                 const rowY = detailStartY + (idx+1)*rowH;
                 doc.setLineWidth(LW_THIN);
                 doc.line(50.0, rowY, 560.0, rowY);
@@ -5957,171 +6173,119 @@ window.onload = function() {
                 doc.text(d.name, 54.0, rowY+10);
                 const codeStr = String(d.code).padStart(6,'0');
                 const codeBoxW = (340.1-176.0)/6;
-                codeStr.split('').forEach((c,ci) => {
-                    doc.text(c, 176.0 + ci*codeBoxW + codeBoxW/2, rowY+10, {align:'center'});
-                });
+                codeStr.split('').forEach((c,ci) => doc.text(c, 176.0+ci*codeBoxW+codeBoxW/2, rowY+10, {align:'center'}));
                 doc.text(String(d.unitsPer), 354.0, rowY+10, {align:'right'});
-                doc.text(String(d.count), 408.0, rowY+10, {align:'right'});
-                doc.text(String(d.total), 444.0, rowY+10, {align:'right'});
+                doc.text(String(d.count),    408.0, rowY+10, {align:'right'});
+                doc.text(String(d.total),    444.0, rowY+10, {align:'right'});
             });
-            // 空行
-            const emptyRows = Math.max(3, 9 - details.length);
+            const emptyRows = Math.max(3, 9-details.length);
             for(let i=details.length; i<details.length+emptyRows; i++) {
-                const rowY = detailStartY + (i+1)*rowH;
-                if(rowY < 496) {
-                    doc.setLineWidth(LW_THIN);
-                    doc.line(50.0, rowY, 560.0, rowY);
-                }
+                const rowY = detailStartY+(i+1)*rowH;
+                if(rowY < 496) { doc.setLineWidth(LW_THIN); doc.line(50.0, rowY, 560.0, rowY); }
             }
-            // 下枠
+            doc.setLineWidth(LW_THIN);
             doc.line(50.0, 496.0, 560.0, 496.0);
 
-            // ── 日中介護等支援加算欄
+            // ── 日中介護等支援加算欄 (35,506)-(560,536) w=1.8
             doc.setLineWidth(LW_THICK);
-            doc.line(71.0, 506.0, 71.0, 536.0);
+            doc.rect(35.0, 506.0, 525.0, 30.0);
+            doc.line(71.0,  506.0, 71.0,  536.0);
             doc.line(146.0, 506.0, 146.0, 536.0);
             doc.line(386.0, 506.0, 386.0, 521.0);
             doc.line(531.0, 506.0, 531.0, 521.0);
             doc.line(145.0, 521.0, 560.0, 521.0);
-
+            doc.setLineWidth(LW_THIN);
+            [221,251,266,281,296,311,326,341,356,371].forEach(x => doc.line(x, 506.0, x, 521.0));
             doc.setFontSize(6);
-            doc.text('日中介護等', 36.0, 512.0);
-            doc.text('支援加算欄', 36.0, 519.0);
-            doc.setFontSize(8);
-            doc.text('日中活動先事業所', 72.0, 512.0);
-            doc.text('指定事業所番号', 150.0, 512.0);
-            doc.setFontSize(6);
-            doc.text('当該事業所への通所日数', 389.0, 512.0);
-            doc.setFontSize(8);
-            doc.text('事業所名称', 150.0, 528.0);
+            doc.text('日中介護等', 36.0, 513.2);
+            doc.text('支援加算欄', 36.0, 519.2);
+            doc.setFontSize(9);
+            doc.text('日中活動先事業所', 71.0, 515.9);
+            doc.setFontSize(10);
+            doc.text('指定事業所番号', 156.0, 509.5);
+            doc.text('事業所名称',     158.3, 523.6);
+            doc.text('当該事業所への通所日数', 389.3, 508.8);
 
-            // ── 請求額集計欄（太枠）
+            // ── 請求額集計欄 (35,546)-(415.9,741.5) w=1.8
             const calcY = 546.0;
             doc.setLineWidth(LW_THICK);
-            doc.line(50.0, calcY, 50.0, 741.0);
+            doc.rect(35.0, calcY, 380.9, 195.5);
+            doc.line(50.0,  calcY, 50.0,  741.0);
             doc.line(145.0, calcY, 145.0, 741.0);
             doc.line(235.0, calcY, 235.0, 741.0);
             doc.line(325.0, calcY, 325.0, 741.0);
-
-            doc.setFontSize(7);
-            doc.text('請求額集計欄', 37.0, 630, {angle:90});
-
-            const rows2 = [
-                {label:'サービス種類コード', y:561},
-                {label:'サービス利用日数', y:576},
-                {label:'給付単位数', y:591},
-                {label:'単位数単価', y:606},
-                {label:'総費用額', y:621},
-                {label:'１割相当額', y:636},
-                {label:'利用者負担額②', y:651},
-                {label:'上限月額調整(①②の内少ない数)', y:666},
-                {label:'調整後利用者負担額', y:681},
-                {label:'上限額管理後利用者負担額', y:696},
-                {label:'決定利用者負担額', y:711},
-                {label:'請求額', y:726},
-                {label:'自治体助成分請求額', y:741},
-            ];
-
-            doc.setLineWidth(LW_THIN);
-            rows2.forEach((r,i) => {
-                if(i < rows2.length-1) doc.line(50.0, r.y, 415.0, r.y);
-            });
-            doc.setLineWidth(LW_THICK);
-            [621, 666, 681, 696, 711, 726].forEach(y => doc.line(50.0, y, 415.0, y));
-
-            const n = v => Number(v||0).toLocaleString('ja-JP');
             doc.setFontSize(8);
-            // サービス種類コード
-            doc.text('サービス種類コード', 52.0, 558.0);
+            ['請','求','額','集','計','欄'].forEach((c,i) => doc.text(c, 40.0, 615.9+i*8));
+            const rows2 = [
+                {label:'サービス種類コード', lsz:8,  y:551.0},
+                {label:'サービス利用日数',   lsz:8,  y:566.0},
+                {label:'給付単位数',         lsz:8,  y:581.0},
+                {label:'単位数単価',         lsz:8,  y:594.6},
+                {label:'総費用額',           lsz:8,  y:607.8},
+                {label:'１割相当額',         lsz:8,  y:623.9},
+                {label:'利用者負担額②',     lsz:8,  y:639.5},
+                {label:'上限月額調整(①②の内少ない数)', lsz:6, y:656.8},
+                {label:'調整後利用者負担額',     lsz:8, y:670.4},
+                {label:'上限額管理後利用者負担額', lsz:7, y:686.0},
+                {label:'決定利用者負担額',   lsz:8,  y:701.0},
+                {label:'請求額',             lsz:8,  y:716.0},
+                {label:'自治体助成分請求額', lsz:8,  y:731.0},
+            ];
+            const rowYs = rows2.map(r=>r.y);
+            doc.setLineWidth(LW_THIN);
+            rowYs.slice(1).forEach(y => doc.line(50.0, y-9, 415.0, y-9));
+            doc.setLineWidth(LW_THICK);
+            [621,666,681,696,711,726].forEach(y => doc.line(50.0, y, 415.0, y));
+            rows2.forEach(r => { doc.setFontSize(r.lsz); doc.text(r.label, 58.5, r.y); });
+            const n = v => Number(v||0).toLocaleString('ja-JP');
             doc.setFontSize(10);
             doc.text('3', 165.0, 558.0, {align:'center'});
             doc.text('3', 180.0, 558.0, {align:'center'});
             doc.setFontSize(9);
             doc.text('合計', 336.0, 558.0);
-
-            doc.setFontSize(8);
-            doc.text('サービス利用日数', 52.0, 573.0);
             doc.setFontSize(10);
+            doc.text('日', 176.6, 563.0);
             doc.text(String(uc.serviceDays), 175.0, 573.0, {align:'right'});
-            doc.setFontSize(8);
-            doc.text('日', 178.0, 573.0);
-
-            doc.text('給付単位数', 52.0, 588.0);
-            doc.setFontSize(10);
+            doc.text('日', 266.6, 563.0);
             doc.text(n(totalUnits), 232.0, 588.0, {align:'right'});
             doc.text(n(totalUnits), 414.0, 588.0, {align:'right'});
-
-            doc.setFontSize(8);
-            doc.text('単位数単価', 52.0, 603.0);
-            doc.setFontSize(10);
             doc.text(unitPriceDisp, 232.0, 603.0, {align:'right'});
-            doc.setFontSize(8);
-            doc.text('円/単位', 235.0, 603.0);
-
-            doc.text('総費用額', 52.0, 618.0);
+            doc.setFontSize(6);
+            doc.text('円/単位', 208.9, 595.0);
+            doc.text('円/単位', 298.9, 594.5);
             doc.setFontSize(10);
             doc.text(n(am.totalCost), 232.0, 618.0, {align:'right'});
             doc.text(n(am.totalCost), 414.0, 618.0, {align:'right'});
-
-            doc.setFontSize(8);
-            doc.text('１割相当額', 52.0, 633.0);
-            doc.setFontSize(10);
             doc.text(n(Math.floor(am.totalCost*0.1)), 232.0, 633.0, {align:'right'});
-
-            doc.setFontSize(8);
-            doc.text('利用者負担額②', 52.0, 648.0);
-            doc.setFontSize(10);
             doc.text(n(am.userBurden), 232.0, 648.0, {align:'right'});
-
-            doc.setFontSize(8);
-            doc.text('上限月額調整(①②の内少ない数)', 52.0, 663.0);
-            doc.setFontSize(10);
             doc.text('0', 232.0, 663.0, {align:'right'});
             doc.text('0', 414.0, 663.0, {align:'right'});
-
-            doc.setFontSize(8);
-            doc.text('調整後利用者負担額', 52.0, 678.0);
-            doc.text('上限額管理後利用者負担額', 52.0, 693.0);
-            doc.text('決定利用者負担額', 52.0, 708.0);
-            doc.setFontSize(10);
             doc.text('0', 232.0, 708.0, {align:'right'});
             doc.text('0', 414.0, 708.0, {align:'right'});
-
-            doc.setFontSize(8);
-            doc.text('請求額', 52.0, 723.0);
-            doc.text('給付費', 150.0, 723.0);
+            doc.setFontSize(9);
+            doc.text('給付費', 105.0, 716.0);
             doc.setFontSize(10);
             doc.text(n(am.grantFee), 232.0, 723.0, {align:'right'});
             doc.text(n(am.grantFee), 414.0, 723.0, {align:'right'});
-
-            doc.setFontSize(8);
-            doc.text('自治体助成分請求額', 52.0, 738.0);
-
-            // 縦の細線（右側集計欄）
+            // 縦細線（単位数単価右側集計欄）
             doc.setLineWidth(LW_THIN);
-            [160,175,190,205,220,280,295,310,340,355,370,385,400].forEach(x => {
-                doc.line(x, 576.0, x, 590.5);
-            });
+            [160,175,190,205,220,280,295,310,340,355,370,385,400].forEach(x => doc.line(x, 576.0, x, 590.5));
 
-            // ── 特定障害者特別給付費
+            // ── 特定障害者特別給付費 (35,751)-(185.1,795.5) w=1.8
             doc.setLineWidth(LW_THICK);
+            doc.rect(35.0, 751.0, 150.1, 44.5);
             doc.line(35.0, 766.0, 185.0, 766.0);
             doc.line(110.0, 766.0, 110.0, 781.0);
             doc.line(35.0, 781.0, 185.0, 781.0);
+            doc.setLineWidth(LW_THIN);
+            [50,65,80,95,125,140,155,170].forEach(x => doc.line(x, 781.0, x, 796.0));
             doc.setFontSize(9);
-            doc.text('特定障害者特別給付費', 52.0, 762.0);
-            doc.setFontSize(8);
-            doc.text('給付費請求額', 38.0, 778.0);
-            doc.text('実費算定額', 115.0, 778.0);
+            doc.text('特定障害者特別給付費', 63.7, 753.3);
             doc.setFontSize(10);
+            doc.text('給付費請求額', 42.9, 767.8);
+            doc.text('実費算定額',   120.6, 767.6);
             doc.text('10,000', 105.0, 793.0, {align:'right'});
             doc.text('10,000', 182.0, 793.0, {align:'right'});
-
-            // 受給者証番号マスの細線
-            doc.setLineWidth(LW_THIN);
-            [120.6,135,150,165,180,195,210,225,240,255].forEach(x => {
-                doc.line(x, 146.0, x, 166.0);
-            });
         }
 
         // jsPDFで請求書ページ描画（様式第一）
@@ -6608,13 +6772,17 @@ window.onload = function() {
   </table>
 
 <!-- 利用者負担上限月額 -->
-  <table style="position:absolute;left:35.8pt;top:215pt;width:524pt;">
+  <table style="position:absolute;left:35.8pt;top:215pt;">
     <tr>
       <td style="border:1.8pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;width:1pt;">利用者負担上限月額　①</td>
       ${String(burdenLimit).padStart(5,' ').split('').map(c=>`<td style="border:0.9pt solid #000;width:18pt;height:25pt;text-align:center;font-size:10pt;">${c===' '?'&nbsp;':c}</td>`).join('')}
-      <td style="border:none;"></td>
+    </tr>
+  </table>
+  <!-- 障害支援区分（請求事業者左端 left:275pt に左揃え） -->
+  <table style="position:absolute;left:275pt;top:215pt;">
+    <tr>
       <td style="border:1.8pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;width:1pt;">障害支援区分</td>
-      <td style="border:1.8pt solid #000;font-size:10pt;padding:2pt 6pt;white-space:nowrap;width:1pt;">${supportDisp}</td>
+      <td style="border:1.8pt solid #000;font-size:10pt;padding:2pt 4pt;width:57pt;text-align:center;">${supportDisp}</td>
     </tr>
   </table>
 
@@ -6623,7 +6791,7 @@ window.onload = function() {
     <tr>
       <td rowspan="2" style="border:1.8pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;">利用者負担上限額<br>管理事業所</td>
       <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;white-space:nowrap;">指定事業所番号</td>
-      <td colspan="3" style="border:0.9pt solid #000;width:60pt;"></td>
+      <td style="border:0.9pt solid #000;width:16pt;"></td><td style="border:0.9pt solid #000;width:16pt;"></td><td style="border:0.9pt solid #000;width:16pt;"></td><td style="border:0.9pt solid #000;width:16pt;"></td><td style="border:0.9pt solid #000;width:16pt;"></td><td style="border:0.9pt solid #000;width:16pt;"></td><td style="border:0.9pt solid #000;width:16pt;"></td><td style="border:0.9pt solid #000;width:16pt;"></td><td style="border:0.9pt solid #000;width:16pt;"></td><td style="border:0.9pt solid #000;width:16pt;"></td>
       <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;white-space:nowrap;">管理結果</td>
       <td colspan="2" style="border:0.9pt solid #000;width:30pt;"></td>
       <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;white-space:nowrap;">管理結果額</td>
@@ -6631,7 +6799,7 @@ window.onload = function() {
     </tr>
     <tr>
       <td style="border:0.9pt solid #000;background:#e8e8e8;font-size:9pt;padding:2pt;">事業所名称</td>
-      <td colspan="9" style="border:0.9pt solid #000;height:18pt;"></td>
+      <td colspan="16" style="border:0.9pt solid #000;height:18pt;"></td>
     </tr>
   </table>
 
@@ -7605,5 +7773,6 @@ ${allPages.join('\n')}
                 '<div class="alert alert-success">✅ ' + filename + ' をダウンロードしました</div>';
         }
     </script>
+    </div><!-- /#mainApp -->
 </body>
 </html>
