@@ -2165,15 +2165,33 @@
                         <button id="btnConfirm" onclick="toggleConfirm()" style="padding:8px 20px; border-radius:6px; border:none; cursor:pointer; font-size:0.9em; font-weight:600; background:#e91e8c; color:white;">確定</button>
                         <span id="confirmStatusLabel" style="font-size:0.85em; color:#888;"></span>
                     </div>
-                    <a href="#" onclick="showConfirmHistory(); return false;" style="font-size:0.85em; color:#667eea;">確定履歴画面へ</a>
+                    <div style="display:flex; gap:16px;">
+                        <a href="#" onclick="showConfirmHistory(); return false;" style="font-size:0.85em; color:#667eea;">確定状態一覧</a>
+                        <a href="#" onclick="showBillingHistory(); return false;" style="font-size:0.85em; color:#667eea;">請求履歴</a>
+                    </div>
                 </div>
 
                 <div id="confirmHistoryPanel" style="display:none; background:#f9f9f9; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:20px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                        <strong style="font-size:0.9em;">確定履歴</strong>
+                        <strong style="font-size:0.9em;">確定状態一覧</strong>
                         <button onclick="document.getElementById('confirmHistoryPanel').style.display='none'" style="background:none; border:none; cursor:pointer; color:#888; font-size:1.1em;">✕</button>
                     </div>
                     <div id="confirmHistoryList" style="font-size:0.85em;"></div>
+                </div>
+
+                <div id="billingHistoryPanel" style="display:none; background:#f9f9f9; border:1px solid #ddd; border-radius:8px; padding:16px; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <strong style="font-size:0.9em;">請求履歴</strong>
+                        <button onclick="document.getElementById('billingHistoryPanel').style.display='none'" style="background:none; border:none; cursor:pointer; color:#888; font-size:1.1em;">✕</button>
+                    </div>
+                    <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+                        <label style="font-size:0.85em; color:#555;">絞り込み（年月）</label>
+                        <select id="billingHistoryFilter" onchange="renderBillingHistoryList()" style="padding:5px 10px; border:1px solid #ddd; border-radius:5px; font-size:0.85em;">
+                            <option value="">全期間</option>
+                        </select>
+                        <button onclick="renderBillingHistoryList()" style="padding:5px 12px; border-radius:5px; border:1px solid #ddd; background:white; font-size:0.85em; cursor:pointer;">更新</button>
+                    </div>
+                    <div id="billingHistoryList" style="font-size:0.85em;"></div>
                 </div>
 
                 <!-- 利用者詳細を表示リンク -->
@@ -2525,21 +2543,79 @@
             }
         }
 
+        async function persistRecord(userId, yearMonth) {
+            if (!currentUser || !userId || !yearMonth) return;
+            const monthData = {};
+            if (records[userId]) {
+                Object.entries(records[userId]).forEach(([date, data]) => {
+                    if (date.startsWith(yearMonth)) monthData[date] = data;
+                });
+            }
+            try {
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('records').doc(`${userId}_${yearMonth}`)
+                    .set({ userId, yearMonth, dates: monthData });
+            } catch (e) {
+                console.error('persistRecord error:', userId, yearMonth, e);
+            }
+        }
+
+        async function saveBillingHistory(userId, yearMonth) {
+            if (!currentUser || !userId || !yearMonth) return;
+            const now = new Date();
+            const ts = now.getFullYear().toString()
+                + String(now.getMonth()+1).padStart(2,'0')
+                + String(now.getDate()).padStart(2,'0')
+                + String(now.getHours()).padStart(2,'0')
+                + String(now.getMinutes()).padStart(2,'0')
+                + String(now.getSeconds()).padStart(2,'0');
+            const docId = `${userId}_${yearMonth}_${ts}`;
+            const user = users.find(u => u.id === userId);
+            const monthSnapshot = {};
+            if (records[userId]) {
+                Object.entries(records[userId]).forEach(([date, data]) => {
+                    if (date.startsWith(yearMonth)) monthSnapshot[date] = data;
+                });
+            }
+            try {
+                await db.collection('users').doc(currentUser.uid)
+                    .collection('billing_history').doc(docId).set({
+                        userId,
+                        userName: user ? user.name : userId,
+                        yearMonth,
+                        confirmedAt: now.toISOString(),
+                        confirmedBy: facility.facilityName || '',
+                        snapshot: monthSnapshot
+                    });
+            } catch (e) {
+                console.error('saveBillingHistory error:', docId, e);
+            }
+        }
+
         async function loadAllData() {
             if (!currentUser) return;
-            const keys = ['gh_users','gh_records','gh_facility','gh_buildings',
+            const keys = ['gh_users','gh_facility','gh_buildings',
                           'gh_limited_entries','gh_staff_list','gh_daily_records','gh_confirmations'];
             const docs = await Promise.all(
                 keys.map(k => db.collection('users').doc(currentUser.uid).collection('data').doc(k).get())
             );
             users              = docs[0].exists ? JSON.parse(docs[0].data().value) : [];
-            records            = docs[1].exists ? JSON.parse(docs[1].data().value) : {};
-            facility           = docs[2].exists ? JSON.parse(docs[2].data().value) : {};
-            buildings          = docs[3].exists ? JSON.parse(docs[3].data().value) : [];
-            limitedEntries     = docs[4].exists ? JSON.parse(docs[4].data().value) : [];
-            staffList          = docs[5].exists ? JSON.parse(docs[5].data().value) : [];
-            dailyRecords       = docs[6].exists ? JSON.parse(docs[6].data().value) : {};
-            exportConfirmations= docs[7].exists ? JSON.parse(docs[7].data().value) : {};
+            facility           = docs[1].exists ? JSON.parse(docs[1].data().value) : {};
+            buildings          = docs[2].exists ? JSON.parse(docs[2].data().value) : [];
+            limitedEntries     = docs[3].exists ? JSON.parse(docs[3].data().value) : [];
+            staffList          = docs[4].exists ? JSON.parse(docs[4].data().value) : [];
+            dailyRecords       = docs[5].exists ? JSON.parse(docs[5].data().value) : {};
+            exportConfirmations= docs[6].exists ? JSON.parse(docs[6].data().value) : {};
+
+            records = {};
+            const recSnap = await db.collection('users').doc(currentUser.uid).collection('records').get();
+            recSnap.forEach(doc => {
+                const d = doc.data();
+                if (d.userId && d.dates) {
+                    if (!records[d.userId]) records[d.userId] = {};
+                    Object.assign(records[d.userId], d.dates);
+                }
+            });
         }
 
         // ===== 認証操作 =====
@@ -5050,7 +5126,7 @@
                 records[selectedUserId][dateStr] = { status, date: dateStr };
             }
 
-            saveData('gh_records', records);
+            persistRecord(selectedUserId, `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`);
             updateCalendar();
             alert(`✅ ${currentYear}年${currentMonth + 1}月を「${status}」で埋めました`);
         }
@@ -5074,7 +5150,7 @@
                 }
             }
 
-            saveData('gh_records', records);
+            persistRecord(selectedUserId, `${currentYear}-${String(currentMonth+1).padStart(2,'0')}`);
             updateCalendar();
             alert(`✅ ${currentYear}年${currentMonth + 1}月の記録を削除しました`);
         }
@@ -5277,7 +5353,13 @@
                 d.setDate(d.getDate() + 1);
             }
 
-            saveData('gh_records', records);
+            const affectedYMs = new Set();
+            let dAff = new Date(dateFrom);
+            while (dAff <= new Date(dateTo)) {
+                affectedYMs.add(dAff.getFullYear() + '-' + String(dAff.getMonth()+1).padStart(2,'0'));
+                dAff.setMonth(dAff.getMonth()+1);
+            }
+            Promise.all([...affectedYMs].map(ym => persistRecord(selectedUserId, ym)));
             updateCalendar();
             closeModal();
             alert(`✅ ${count}件の記録を登録しました`);
@@ -5365,7 +5447,7 @@
             }
         }
 
-        function toggleConfirm() {
+        async function toggleConfirm() {
             const sel = document.getElementById('exportMonthSelect');
             const monthVal = sel ? sel.value : document.getElementById('exportMonth').value;
             if (!monthVal) { alert('対象年月を選択してください'); return; }
@@ -5382,6 +5464,8 @@
                     confirmedAt: new Date().toISOString(),
                     confirmedBy: facility.facilityName || ''
                 };
+                const selectedUserIds = [...document.querySelectorAll('.exportUserCheck:checked')].map(cb => cb.value);
+                await Promise.all(selectedUserIds.map(uid => saveBillingHistory(uid, monthVal)));
                 alert('✅ ' + label + ' を確定しました');
             }
             saveData('gh_confirmations', exportConfirmations);
@@ -5409,6 +5493,80 @@
                         '</tr>';
                 }).join('') +
                 '</table>';
+        }
+
+        async function showBillingHistory() {
+            const panel = document.getElementById('billingHistoryPanel');
+            if (!panel) return;
+            if (panel.style.display !== 'none') {
+                panel.style.display = 'none';
+                return;
+            }
+            panel.style.display = '';
+            // フィルターの選択肢を今月基準で生成（過去24ヶ月）
+            const filterSel = document.getElementById('billingHistoryFilter');
+            if (filterSel && filterSel.options.length <= 1) {
+                const today = new Date();
+                for (let i = 0; i <= 24; i++) {
+                    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                    const val = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+                    const label = d.getFullYear() + '年' + (d.getMonth()+1) + '月';
+                    const opt = document.createElement('option');
+                    opt.value = val;
+                    opt.textContent = label;
+                    filterSel.appendChild(opt);
+                }
+                // exportMonthSelectの選択値に合わせる
+                const exportSel = document.getElementById('exportMonthSelect');
+                if (exportSel && exportSel.value) filterSel.value = exportSel.value;
+            }
+            await renderBillingHistoryList();
+        }
+
+        async function renderBillingHistoryList() {
+            const list = document.getElementById('billingHistoryList');
+            if (!list || !currentUser) return;
+            list.innerHTML = '<p style="color:#aaa;">読み込み中...</p>';
+
+            const filterSel = document.getElementById('billingHistoryFilter');
+            const filterYM = filterSel ? filterSel.value : '';
+
+            let query = db.collection('users').doc(currentUser.uid).collection('billing_history');
+            const snap = await query.get();
+
+            let items = [];
+            snap.forEach(doc => {
+                const d = doc.data();
+                if (!filterYM || d.yearMonth === filterYM) {
+                    items.push({ id: doc.id, ...d });
+                }
+            });
+            items.sort((a, b) => b.confirmedAt.localeCompare(a.confirmedAt));
+
+            if (items.length === 0) {
+                list.innerHTML = '<p style="color:#aaa;">請求履歴はありません</p>';
+                return;
+            }
+
+            list.innerHTML = '<table style="width:100%; border-collapse:collapse;">' +
+                '<thead><tr style="background:#f0f4ff;">' +
+                '<th style="text-align:left; padding:7px 8px; font-size:0.9em;">利用者</th>' +
+                '<th style="text-align:left; padding:7px 8px; font-size:0.9em;">対象年月</th>' +
+                '<th style="text-align:left; padding:7px 8px; font-size:0.9em;">確定日時</th>' +
+                '<th style="text-align:left; padding:7px 8px; font-size:0.9em;">確定者</th>' +
+                '</tr></thead><tbody>' +
+                items.map(item => {
+                    const [y, m] = (item.yearMonth || '').split('-');
+                    const ymLabel = y && m ? y + '年' + parseInt(m) + '月' : item.yearMonth || '';
+                    return '<tr style="border-bottom:1px solid #eee;">' +
+                        '<td style="padding:7px 8px;">' + (item.userName || item.userId || '') + '</td>' +
+                        '<td style="padding:7px 8px;">' + ymLabel + '</td>' +
+                        '<td style="padding:7px 8px;">' + new Date(item.confirmedAt).toLocaleString('ja-JP') + '</td>' +
+                        '<td style="padding:7px 8px;">' + (item.confirmedBy || '') + '</td>' +
+                        '</tr>';
+                }).join('') +
+                '</tbody></table>' +
+                '<p style="color:#888; font-size:0.8em; margin-top:8px;">全 ' + items.length + ' 件</p>';
         }
 
         function showTab2(name) {
